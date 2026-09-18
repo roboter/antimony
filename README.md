@@ -7,7 +7,7 @@ by way of [fabserver](http://kokompe.cba.mit.edu).
 
 For more details and screenshots, look at [this writeup](http://mattkeeter.com/projects/antimony).
 
-doc/screwdriver.mp4
+[doc/screwdriver.mp4](https://github.com/roboter/antimony/blob/feature/win32-build/doc/screwdriver.mp4)
 
 ## Try it
 *Antimony* is in [long-term maintenance mode](https://github.com/mkeeter/antimony/issues/205#issuecomment-484271273).

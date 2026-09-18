@@ -124,9 +124,17 @@ void EvalDatum::onPyError()
         PyObject* lineno = PyObject_GetAttrString(ptraceback, "tb_lineno");
         error_lineno = PyLong_AsLong(lineno);
         Py_DECREF(lineno);
+    } else if (pvalue) {
+        PyObject* lineno = PyObject_GetAttrString(pvalue, "lineno");
+        if (lineno) {
+            error_lineno = PyLong_AsLong(lineno);
+            Py_DECREF(lineno);
+        } else {
+            PyErr_Clear();
+            error_lineno = -1;
+        }
     } else {
-        error_lineno = PyLong_AsLong(PyTuple_GetItem(
-                                     PyTuple_GetItem(pvalue, 1), 1));
+        error_lineno = -1;
     }
 
     // Call traceback.format_exception on the traceback.

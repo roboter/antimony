@@ -1,4 +1,4 @@
-QT += core gui widgets testlib
+QT += core gui widgets testlib network
 
 CONFIG += testcase
 CONFIG += c++11 object_parallel_to_source

@@ -7,6 +7,8 @@ by way of [fabserver](http://kokompe.cba.mit.edu).
 
 For more details and screenshots, look at [this writeup](http://mattkeeter.com/projects/antimony).
 
+<iframe title="vimeo-player" src="https://player.vimeo.com/video/125111378?h=49ef59cc3e" width="640" height="360" frameborder="0" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" allowfullscreen></iframe>
+
 ## Try it
 *Antimony* is under active development.  It's at a beta level of stability:
 solid, but not recommended for mission-critical use.

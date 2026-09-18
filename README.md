@@ -1,3 +1,6 @@
+[![Windows Build](https://github.com/roboter/antimony/actions/workflows/windows-build.yml/badge.svg)](https://github.com/roboter/antimony/actions/workflows/windows-build.yml)
+[![Mac Build](https://github.com/roboter/antimony/actions/workflows/mac-build.yml/badge.svg)](https://github.com/roboter/antimony/actions/workflows/mac-build.yml)
+
 ## About
 *Antimony* is a computer-aided design (CAD) tool from a parallel universe
 in which CAD software evolved from Lisp machines rather than drafting tables
@@ -15,8 +18,8 @@ It's at a beta level of stability:
 solid, but not recommended for mission-critical use.
 
 To get started, there are two suggested options:
-- Download a [pre-built application](https://github.com/mkeeter/antimony/releases) (Mac only)
-- [Build from source](https://github.com/mkeeter/antimony/blob/develop/BUILDING.md) (Mac and Linux)
+- Download a [pre-built application](https://github.com/mkeeter/antimony/releases) (Mac and Windows)
+- [Build from source](https://github.com/mkeeter/antimony/blob/develop/BUILDING.md) (Mac, Linux, and Windows)
 
 There are also community-supported packages for the following operating systems:
 * Debian 11 or later
@@ -27,6 +30,39 @@ There are also community-supported packages for the following operating systems:
     * `pkg install antimony-cad`
 * Ubuntu 22.04 or later
     *  `apt install antimony`
+
+## Mac Requirements
+
+To build on macOS, you will need [Homebrew](https://brew.sh/) installed with the following packages:
+- `qt@5`
+- `python3`
+- `boost-python3`
+- `libpng`
+- `cmake`
+- `ninja`
+- `flex`
+- `lemon`
+
+You can install these dependencies using:
+```bash
+brew install libpng python3 boost-python3 qt@5 lemon flex ninja cmake
+```
+See [BUILDING.md](BUILDING.md) for more details on compiling from source on Mac.
+
+## Windows Requirements
+
+To build on Windows, you will need [MSYS2](https://www.msys2.org/) with the UCRT64 environment and the following packages:
+- `mingw-w64-ucrt-x86_64-toolchain`
+- `mingw-w64-ucrt-x86_64-qt5`
+- `mingw-w64-ucrt-x86_64-python`
+- `mingw-w64-ucrt-x86_64-boost`
+- `mingw-w64-ucrt-x86_64-libpng`
+- `mingw-w64-ucrt-x86_64-cmake`
+- `mingw-w64-ucrt-x86_64-ninja`
+- `flex`
+- `lemon`
+
+You can use the provided PowerShell scripts (`.\scripts\build-windows.ps1` and `.\scripts\run-windows.ps1`) to automatically install these dependencies, build, and run the application. See [BUILDING.md](BUILDING.md) for more details.
 
 ## Support
 

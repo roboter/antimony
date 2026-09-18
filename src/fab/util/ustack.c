@@ -1,4 +1,5 @@
 #include "fab/util/ustack.h"
+#include <stdlib.h>
 
 void ustack_push(ustack* u, unsigned i)
 {

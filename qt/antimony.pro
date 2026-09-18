@@ -13,10 +13,17 @@ QMAKE_CXXFLAGS_RELEASE += -O3
 QMAKE_CXXFLAGS += -Werror=switch
 QMAKE_CFLAGS += -std=c11
 
-GITREV = $$system(git log --pretty=format:'%h' -n 1)
-GITDIFF = $$system(git diff --quiet --exit-code || echo "+")
-GITTAG = $$system(git describe --exact-match --tags 2> /dev/null)
-GITBRANCH = $$system(git rev-parse --abbrev-ref HEAD)
+win32 {
+    GITREV = $$system(git log --pretty=format:'%h' -n 1 2> NUL)
+    GITDIFF = $$system(git diff --quiet --exit-code 2> NUL || echo "+")
+    GITTAG = $$system(git describe --exact-match --tags 2> NUL)
+    GITBRANCH = $$system(git rev-parse --abbrev-ref HEAD 2> NUL)
+} else {
+    GITREV = $$system(git log --pretty=format:'%h' -n 1 2> /dev/null)
+    GITDIFF = $$system(git diff --quiet --exit-code 2> /dev/null || echo "+")
+    GITTAG = $$system(git describe --exact-match --tags 2> /dev/null)
+    GITBRANCH = $$system(git rev-parse --abbrev-ref HEAD 2> /dev/null)
+}
 
 QMAKE_CXXFLAGS += "-D'GITREV=\"$${GITREV}$${GITDIFF}\"'"
 QMAKE_CXXFLAGS += "-D'GITTAG=\"$${GITTAG}\"'"

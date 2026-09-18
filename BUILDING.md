@@ -78,24 +78,23 @@ to make it appear.
 Windows
 -------
 
-Building on Windows is a bit more challenging.  Here's the basic overview:
-- Download and install Qt 5.4.2 (32-bit, MinGW)
-- Download and install MinGW separately to get the MSYS tools
-- Use MSYS to install `zlib` and `make`
-- Download Boost 1.58 and unzip to `C:\boost_1_58_0`
-- Build boost::python.  In Powershell, this looks like
-```
-cd boost_folder
-$env:Path = $env:Path + ";C:\Qt\Qt5.4.2\Tools\mingw491_32\bin"
-.\bootstrap.bat mingw
-.\b2 --with-python toolset=gcc link=shared
-```
-- Download `libpng` and unzip to `C:\lpng1617`
-- Compile `libpng` using the `MSYS` makefile.  In Powershell, this looks like
-```
-cd C:\lpng1617
-cp scripts\makefile.msys makefile
-$env:Path = $env:Path + ";C:\MinGW\msys\1.0\bin"
-make
+Building on Windows uses the MSYS2 UCRT64 environment to provide modern dependencies.
+
+The easiest way to build Antimony on Windows is using MSYS2 and the UCRT64 environment. We provide automated PowerShell scripts to handle this.
+
+1. Install [MSYS2](https://www.msys2.org/) to `C:\msys64`.
+2. Open a standard Windows PowerShell.
+3. Navigate to the Antimony repository folder.
+4. Run the build script to install dependencies and compile the project:
+   ```powershell
+   .\scripts\build-windows.ps1
+   ```
+
+### Running the application
+
+To run Antimony, you need to ensure the dynamically linked libraries (DLLs) from MSYS2 are available. We provide a launch script that handles this for you:
+```powershell
+.\scripts\run-windows.ps1
 ```
 
+If you prefer to run it manually, make sure `C:\msys64\ucrt64\bin` is in your system's `PATH`, then you can run `build\release\antimony.exe` directly.

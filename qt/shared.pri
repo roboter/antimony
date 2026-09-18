@@ -44,14 +44,13 @@ cygwin {
 win32 {
     # MinGW has issue with include order (due to Python undefining "hypot")
     QMAKE_CXXFLAGS += -include cmath
-    INCLUDEPATH += C:\lpng1617
-    INCLUDEPATH += C:\boost_1_58_0
-    INCLUDEPATH += C:\Python34\include
 
-    LIBS += -LC:\python34\DLLs -lpython3
-    LIBS += -LC:\lpng1617 -lpng16
-    LIBS += -LC:\boost_1_58_0\stage\lib -lboost_python3-mgw49-mt-1_58
-    LIBS += -LC:\python34\DLLs -lpython3
+    QMAKE_CXXFLAGS += $$system(pkg-config --cflags python3)
+    QMAKE_CFLAGS += $$system(pkg-config --cflags python3)
+    LIBS += $$system(pkg-config --libs python3)
+    LIBS += -lboost_python314-mt
+    LIBS += $$system(pkg-config --libs libpng)
+    LIBS += -lopengl32
 }
 
 macx {

@@ -8,6 +8,8 @@
 #include <QVector3D>
 #include <QMatrix4x4>
 #include <QPainter>
+#include <QPainterPath>
+#include <QPainterPathStroker>
 
 // Forward declarations
 class Datum;

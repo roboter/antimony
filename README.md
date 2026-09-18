@@ -7,7 +7,7 @@ by way of [fabserver](http://kokompe.cba.mit.edu).
 
 For more details and screenshots, look at [this writeup](http://mattkeeter.com/projects/antimony).
 
-<iframe title="vimeo-player" src="https://player.vimeo.com/video/125111378?h=49ef59cc3e" width="640" height="360" frameborder="0" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" allowfullscreen></iframe>
+[![Antimony Demo Video](screenshot.png)](https://vimeo.com/125111378 "Click to Watch on Vimeo")
 
 ## Try it
 *Antimony* is in [long-term maintenance mode](https://github.com/mkeeter/antimony/issues/205#issuecomment-484271273).

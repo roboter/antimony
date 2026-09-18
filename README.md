@@ -7,7 +7,7 @@ by way of [fabserver](http://kokompe.cba.mit.edu).
 
 For more details and screenshots, look at [this writeup](http://mattkeeter.com/projects/antimony).
 
-<video src="doc/screwdriver.mp4" controls="controls" width="640" height="360"></video>
+doc/screwdriver.mp4
 
 ## Try it
 *Antimony* is in [long-term maintenance mode](https://github.com/mkeeter/antimony/issues/205#issuecomment-484271273).

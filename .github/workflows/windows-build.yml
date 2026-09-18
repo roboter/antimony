@@ -24,37 +24,21 @@ jobs:
           mingw-w64-ucrt-x86_64-python
           mingw-w64-ucrt-x86_64-boost
           mingw-w64-ucrt-x86_64-libpng
+          mingw-w64-ucrt-x86_64-cmake
+          mingw-w64-ucrt-x86_64-ninja
+          flex
+          lemon
 
     - name: Build Antimony
       shell: msys2 {0}
       run: |
         mkdir -p build
         cd build
-        qmake-qt5 ../qt/antimony.pro
-        mingw32-make -j$(nproc)
-        
-        # Copy python modules
-        mkdir -p release/sb
-        cp -f -R ../py/nodes release/sb/
-        cp -f -R ../py/fab release/sb/
-
-    - name: Build and Run Tests
-      shell: msys2 {0}
-      run: |
-        mkdir -p build-tests
-        cd build-tests
-        qmake-qt5 ../qt/antimony-tests.pro
-        mingw32-make -j$(nproc)
-        
-        # Run the compiled tests
-        if [ -f "release/antimony-tests.exe" ]; then
-          ./release/antimony-tests.exe
-        else
-          ./antimony-tests.exe
-        fi
+        cmake -G Ninja ..
+        ninja
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: antimony-windows-build
-        path: build/release/
+        path: build/app/

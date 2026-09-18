@@ -158,7 +158,7 @@ target_link_libraries(${ANTIMONY_APP}
 
 ################################################################################
 
-execute_process(COMMAND git log --pretty=format:'%h' -n 1
+execute_process(COMMAND git log --pretty=format:%h -n 1
                 OUTPUT_VARIABLE GITREV)
 execute_process(COMMAND bash -c "git diff --quiet --exit-code || echo +"
                 OUTPUT_VARIABLE GITDIFF)
@@ -168,9 +168,14 @@ execute_process(COMMAND git describe --exact-match --tags
 execute_process(COMMAND git rev-parse --abbrev-ref HEAD
                 OUTPUT_VARIABLE GITBRANCH)
 
-add_definitions(-D'GITREV="${GITREV}${GITDIFF}"'
-                -D'GITTAG="${GITTAG}"'
-                -D'GITBRANCH="${GITBRANCH}"')
+string(STRIP "${GITREV}" GITREV)
+string(STRIP "${GITDIFF}" GITDIFF)
+string(STRIP "${GITTAG}" GITTAG)
+string(STRIP "${GITBRANCH}" GITBRANCH)
+
+add_definitions(-DGITREV=\"${GITREV}${GITDIFF}\"
+                -DGITTAG=\"${GITTAG}\"
+                -DGITBRANCH=\"${GITBRANCH}\")
 
 ################################################################################
 

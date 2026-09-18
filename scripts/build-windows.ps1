@@ -5,7 +5,7 @@ Builds the Antimony project on Windows using MSYS2 UCRT64.
 .DESCRIPTION
 This script checks if MSYS2 is installed. If so, it uses the UCRT64 environment
 to install dependencies via pacman, and then configures and builds the project
-using qmake and make.
+using cmake and ninja.
 #>
 
 $msys2Path = "C:\msys64"
@@ -21,7 +21,7 @@ $repoRoot = (Get-Item $PSScriptRoot).Parent.FullName
 
 # We need to run commands inside the MSYS2 UCRT64 environment.
 Write-Host "Installing dependencies using pacman..." -ForegroundColor Cyan
-$pacmanCmd = "pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-qt5 mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-libpng"
+$pacmanCmd = "pacman -S --needed --noconfirm mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-qt5 mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-boost mingw-w64-ucrt-x86_64-libpng mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja flex lemon"
 & $msys2Shell -ucrt64 -defterm -no-start -c $pacmanCmd
 
 if ($LASTEXITCODE -ne 0) {
@@ -34,7 +34,7 @@ Write-Host "Building Antimony..." -ForegroundColor Cyan
 $msysRepoRoot = $repoRoot -replace '\\', '/'
 $msysRepoRoot = $msysRepoRoot -replace '^([a-zA-Z]):', '/$1'
 
-$buildCmd = "mkdir -p '$msysRepoRoot/build' && cd '$msysRepoRoot/build' && qmake-qt5 ../qt/antimony.pro && mingw32-make -j8"
+$buildCmd = "mkdir -p '$msysRepoRoot/build' && cd '$msysRepoRoot/build' && cmake -G Ninja .. && ninja"
 & $msys2Shell -ucrt64 -defterm -no-start -c $buildCmd
 
 if ($LASTEXITCODE -ne 0) {
@@ -42,15 +42,5 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-Write-Host "Copying python modules to release directory..." -ForegroundColor Cyan
-$sbTarget = "$msysRepoRoot/build/release/sb"
-$copyCmd = "mkdir -p '$sbTarget' && cp -f -R '$msysRepoRoot/py/nodes' '$sbTarget/' && cp -f -R '$msysRepoRoot/py/fab' '$sbTarget/'"
-& $msys2Shell -ucrt64 -defterm -no-start -c $copyCmd
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Failed to copy python modules." -ForegroundColor Red
-    exit $LASTEXITCODE
-}
-
 Write-Host "Build completed successfully!" -ForegroundColor Green
-Write-Host "You can run Antimony from: $repoRoot\build\antimony.exe" -ForegroundColor Green
+Write-Host "You can run Antimony from: $repoRoot\build\app\antimony.exe" -ForegroundColor Green

@@ -18,8 +18,8 @@ It's at a beta level of stability:
 solid, but not recommended for mission-critical use.
 
 To get started, there are two suggested options:
-- Download a [pre-built application](https://github.com/mkeeter/antimony/releases) (Mac and Windows)
-- [Build from source](https://github.com/mkeeter/antimony/blob/develop/BUILDING.md) (Mac, Linux, and Windows)
+- Download a [pre-built application](https://github.com/roboter/antimony/releases) (🍎 Mac and 🪟 Windows)
+- [Build from source](BUILDING.md) (🍎 Mac, 🐧 Linux, and 🪟 Windows)
 
 There are also community-supported packages for the following operating systems:
 * Debian 11 or later

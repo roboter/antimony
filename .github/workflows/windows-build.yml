@@ -3,6 +3,8 @@ name: Windows Build
 on:
   push:
     branches: [ "master", "main", "feature/win32-build" ]
+    tags:
+      - '*'
   pull_request:
     branches: [ "master", "main", "feature/win32-build" ]
 
@@ -42,3 +44,13 @@ jobs:
       with:
         name: antimony-windows-build
         path: build/app/
+
+    - name: Zip Release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: Compress-Archive -Path build/app -DestinationPath antimony-windows.zip
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: antimony-windows.zip

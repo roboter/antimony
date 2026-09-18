@@ -33,6 +33,7 @@ If a code snippet is invalid, the text field's border will turn red.
 Hover over it with the mouse to see the Python traceback.
 
 Shift + left-click on a datum's text field and drag right or left to slide values up and down.
+Hold `alt` while doing so to adjust the value faster.
 
 Datums can be connected using the I/O ports on the right and left.
 Click and drag on the right-hand port to start a connection;
@@ -50,7 +51,7 @@ rotate with the right;
 zoom with the mouse wheel.
 The axis selector in the top right snaps the view to a particular axis.
 When looking along a main axis,
-the mouse pointer's coordinates are shown in the botton left.
+the mouse pointer's coordinates are shown in the bottom left.
 
 As in the graph window,
 nodes can be added from the *Add* menu or with Shift+A.
@@ -65,12 +66,13 @@ right-clicking will open up a list and one can be chosen to raise above the othe
 A script editor is used to edit the Python code of a Script node.
 To open the script editor,
 add a Script node in the graph view
-then choose "Edit Script" from the menu icon in the top right of the node.
+then click on the icon (three horizontal lines)
+in the top left of the inspector.
 
 There are three panes in the editor window:
 - The top pane is the script
 - The middle pane is any output sent to `stdout` (e.g. with `print`)
-- The botton pane is any Python error that occured during execution
+- The bottom pane is any Python error that occurred during execution
 
 The lower two panes only appear when needed
 (i.e. when something was sent to `stdout`
@@ -84,9 +86,8 @@ The export workflow in Antimony is a bit non-traditional.
 
 To export a particular shape, create a node from the Export category then
 connect the target shape to its input port.  If the shape is a valid target
-for export, a right-pointing arrow icon will appear in the top right corner
-of the node's graph representation; clicking on this arrow will start the
-export task.
+for export, a export button will appears below the datums in the node;
+clicking on this arrow will start the export task.
 
 This means that multiple export tasks can be defined for different parts of
 a model; details like resolution and even target filename can also be

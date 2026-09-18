@@ -18,7 +18,7 @@ Type=Application
 Version=1.0
 Name=Antimony
 Comment=Tree-based Modeler
-GenericName=CAD Application # Stolen from FreeCAD
+GenericName=CAD Application
 Exec={exec} %f
 Icon={icon}
 Terminal=false
@@ -55,7 +55,7 @@ def find_antimony(usepath=False):
     """
     Track down the antimony binary
     """
-    proanti = os.path.join(project(), 'build', 'antimony')
+    proanti = os.path.join(project(), 'build', 'app', 'antimony')
     if usepath:
         for path in os.environ['PATH'].split(':'):
             pathanti = os.path.join(path, 'antimony')

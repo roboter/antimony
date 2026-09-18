@@ -137,8 +137,10 @@ def triangle(x0, y0, x1, y1, x2, y2):
 
 def right_triangle(x, y, w, h):
    # max(max(x-X,y-Y),X-(x*(Y-y)+(x+w)*(y+h-Y))/h)
+   ws = math.copysign(1,w)
+   hs = math.copysign(1,h)
    return Shape(
-      'aa-f%(x)gX-f%(y)gY-X/+*f%(x)g-Yf%(y)g*+f%(x)gf%(w)g-+f%(y)gf%(h)gYf%(h)g' % locals(),
+      'aa*f%(ws)g-f%(x)gX*f%(hs)g-f%(y)gY*f%(ws)g-X/+*f%(x)g-Yf%(y)g*+f%(x)gf%(w)g-+f%(y)gf%(h)gYf%(h)g' % locals(),
        x, y, x + w, y + h)
 
 ################################################################################
@@ -414,7 +416,7 @@ def scale_z_r(part, x0, y0, z0, r0, s0, r1, s1):
 def extrude_z(part, zmin, zmax):
     # max(part, max(zmin-Z, Z-zmax))
     return Shape(
-            'am  f1%sa-f%gZ-Zf%g' % (part.math, zmin, zmax),
+            'am__f1%sa-f%gZ-Zf%g' % (part.math, zmin, zmax),
             part.bounds.xmin, part.bounds.ymin, zmin,
             part.bounds.xmax, part.bounds.ymax, zmax)
 
@@ -516,19 +518,22 @@ def taper_x_y(part, x0, y0, y1, s0, s1):
         '+f%(x0)g*-Xf%(x0)g/-+*Yf%(ds)gf%(s0y1)gf%(s1y0)gf%(dy)g' % locals(),
         'Y'))
 
-
 @preserve_color
 def iterate2d(part, i, j, dx, dy):
-    """ Tiles a part in the X and Y directions.
+    return iterate3d(part, i, j, 1, dx, dy, 1)
+
+@preserve_color
+def iterate3d(part, i, j, k, dx, dy, dz):
+    """ Tiles a part in the X, Y, and Z directions.
     """
-    if i < 1 or j < 1:
+    if i < 1 or j < 1 or k < 1:
         raise ValueError("Invalid value for iteration")
 
-    return functools.reduce(operator.or_,
-            [move(functools.reduce(operator.or_,
-                    [move(part, a*dx, 0, 0) for a in range(i)]), 0, b*dy, 0)
-                for b in range(j)])
-
+    #FIXME: if you try to do this all at once, segfault
+    xiterate = functools.reduce(operator.or_, [move(part, a*dx, 0, 0) for a in range(i)])
+    yiterate = functools.reduce(operator.or_, [move(xiterate, 0, b*dy, 0) for b in range(j)])
+    ziterate = functools.reduce(operator.or_, [move(yiterate, 0, 0, c*dz) for c in range(k)])
+    return ziterate
 
 @preserve_color
 def iterate_polar(part, x, y, n):
@@ -579,8 +584,7 @@ def cylinder_y(x, ymin, ymax, z, r):
       x-r, ymin, z-r, x+r, ymax,z+r)
 
 def sphere(x, y, z, r):
-    return Shape(
-            '-r++q%sq%sq%sf%g' % (('-Xf%g' % x) if x else 'X',
+    return Shape('-r++q%sq%sq%sf%g' % (('-Xf%g' % x) if x else 'X',
                                   ('-Yf%g' % y) if y else 'Y',
                                   ('-Zf%g' % z) if z else 'Z',
                                   r),
@@ -798,6 +802,29 @@ def repel(part, x, y, z, r):
         x, y, z)
 
 ################################################################################
+
+@preserve_color
+def cylinder_y_wrap(part, radius):
+    tx = "(X / %(radius)f)" % locals()
+    tz = "(Z / %(radius)f)" % locals()
+    dist = "(sqrt( (%(tx)s)**2 + (%(tz)s)**2 ))" % locals()
+    angle = "(atan2( %(tx)s, %(tz)s ))" % locals()
+
+    Xfn = "=%(angle)s * %(radius)f;" % locals()
+    Yfn = "_"
+    Zfn = "=(%(dist)s - 1) * %(radius)f;" % locals()
+
+    angle = "(X / %(radius)f)" % locals()
+    r = "(%(radius)f + Z)" % locals()
+    sina = "(sin(%(angle)s))" % locals()
+    cosa = "(cos(%(angle)s))" % locals()
+
+    Xfn_inv = "=%(r)s * %(sina)s;" % locals()
+    Yfn_inv = ""
+    Zfn_inv = "=%(r)s * %(cosa)s;" % locals()
+
+    return part.map(Transform(  Xfn, Yfn, Zfn,
+                                Xfn_inv, Yfn_inv, Zfn_inv))
 
 @preserve_color
 def twist_xy_z(part, x, y, z0, z1, t0, t1):
@@ -1478,4 +1505,3 @@ _widths['?'] = 0.55
 _glyphs['?'] = shape
 
 del shape
-

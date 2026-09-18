@@ -10,11 +10,23 @@ For more details and screenshots, look at [this writeup](http://mattkeeter.com/p
 <iframe title="vimeo-player" src="https://player.vimeo.com/video/125111378?h=49ef59cc3e" width="640" height="360" frameborder="0" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" allowfullscreen></iframe>
 
 ## Try it
-*Antimony* is under active development.  It's at a beta level of stability:
+*Antimony* is in [long-term maintenance mode](https://github.com/mkeeter/antimony/issues/205#issuecomment-484271273).
+It's at a beta level of stability:
 solid, but not recommended for mission-critical use.
 
-To get started, refer to the [build instructions](https://github.com/mkeeter/antimony/blob/develop/BUILDING.md)
-or download a [release build](https://github.com/mkeeter/antimony/releases).
+To get started, there are two suggested options:
+- Download a [pre-built application](https://github.com/mkeeter/antimony/releases) (Mac only)
+- [Build from source](https://github.com/mkeeter/antimony/blob/develop/BUILDING.md) (Mac and Linux)
+
+There are also community-supported packages for the following operating systems:
+* Debian 11 or later
+    * `apt install antimony`
+* Fedora 22 through 32 (no longer supported)
+    * `dnf install antimony`
+* FreeBSD 13 or later
+    * `pkg install antimony-cad`
+* Ubuntu 22.04 or later
+    *  `apt install antimony`
 
 ## Support
 

@@ -9,6 +9,8 @@
 #include "fab/tree/eval.h"
 #include "fab/util/interval.h"
 
+using std::isinf;
+
 Bounds::Bounds()
     : Bounds(-INFINITY, -INFINITY, -INFINITY,
               INFINITY,  INFINITY,  INFINITY)

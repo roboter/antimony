@@ -7,19 +7,26 @@ by way of [fabserver](http://kokompe.cba.mit.edu).
 
 For more details and screenshots, look at [this writeup](http://mattkeeter.com/projects/antimony).
 
+https://github.com/roboter/antimony/blob/feature/win32-build/doc/screwdriver.mp4
+
 ## Try it
-*Antimony* is under active development.  It's at a beta level of stability:
+*Antimony* is in [long-term maintenance mode](https://github.com/mkeeter/antimony/issues/205#issuecomment-484271273).
+It's at a beta level of stability:
 solid, but not recommended for mission-critical use.
 
 To get started, there are two suggested options:
 - Download a [pre-built application](https://github.com/mkeeter/antimony/releases) (Mac only)
 - [Build from source](https://github.com/mkeeter/antimony/blob/develop/BUILDING.md) (Mac and Linux)
 
-There is also a community-supported package for [Fedora 22 or later](https://admin.fedoraproject.org/pkgdb/package/antimony/):
-```
-dnf install antimony
-```
-(or `dnf install antimony --enablerepo=updates-testing` to get testing builds)
+There are also community-supported packages for the following operating systems:
+* Debian 11 or later
+    * `apt install antimony`
+* Fedora 22 through 32 (no longer supported)
+    * `dnf install antimony`
+* FreeBSD 13 or later
+    * `pkg install antimony-cad`
+* Ubuntu 22.04 or later
+    *  `apt install antimony`
 
 ## Support
 

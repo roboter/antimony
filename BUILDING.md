@@ -12,11 +12,11 @@ Requirements
 
 Mac OS X
 --------
-Tested on Mac OS X 10.9.4 with [homebrew](http://brew.sh/) already installed:
+Tested on Mac OS X 10.13.4 with [homebrew](http://brew.sh/) already installed:
 ```
 brew install libpng
 brew install python3
-brew install --with-python3 boost-python
+brew install boost-python3
 brew install qt5
 brew install lemon
 brew install flex
@@ -29,7 +29,7 @@ mkdir build
 cd build
 
 
-cmake -DCMAKE_PREFIX_PATH=/usr/local/Cellar/qt5/5.6.1 -GNinja ..
+cmake -DCMAKE_PREFIX_PATH=/usr/local/Cellar/qt/5.10.1 -GNinja ..
 ninja
 
 open app/Antimony.app
@@ -44,6 +44,8 @@ Tested on a clean Xubuntu 16.04 virtual machine:
 ```
 # Install dependencies
 sudo apt install git build-essential libpng-dev python3-dev libboost-all-dev  libgl1-mesa-dev lemon flex qt5-default ninja-build cmake
+
+(On some distros, you may need to install `libqt5opengl5` or `libqt5opengl5-dev` as well).
 
 # Clone the repo
 git clone https://github.com/mkeeter/antimony
@@ -110,3 +112,77 @@ desktop environment (e.g. `gnome-session-flashback`), run
 sudo apt-get remove appmenu-qt5
 ```
 to make it appear.
+
+Windows
+-------
+
+Windows (MSYS2 UCRT64 - preferred)
+-------
+
+Building on Windows uses the MSYS2 UCRT64 environment to provide modern dependencies.
+
+The easiest way to build Antimony on Windows is using MSYS2 and the UCRT64 environment. We provide automated PowerShell scripts to handle this.
+
+1. Install [MSYS2](https://www.msys2.org/) to `C:\msys64`.
+2. Open a standard Windows PowerShell.
+3. Navigate to the Antimony repository folder.
+4. Run the build script to install dependencies and compile the project:
+   ```powershell
+   .\scripts\build-windows.ps1
+   ```
+
+Running the application
+
+To run Antimony, you need to ensure the dynamically linked libraries (DLLs) from MSYS2 are available. We provide a launch script that handles this for you:
+```powershell
+.\scripts\run-windows.ps1
+```
+
+If you prefer to run it manually, make sure `C:\msys64\ucrt64\bin` is in your system's `PATH`, then you can run `build\release\antimony.exe` directly.
+
+Windows (MinGW / MSYS2 - experimental)
+----------------------
+
+Install [msys2-x86_64](http://msys2.github.io/) and open an "MSYS2 MinGW 64-bit" shell.
+
+Run the following commands to install dependencies:
+```
+pacman -Syuu
+pacman -S git make lemon flex mingw-w64-x86_64-python3 mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5 mingw-w64-x86_64-toolchain
+```
+
+Sadly, we can't install Boost through `pacman` because of a
+[packaging bug](https://github.com/Alexpux/MINGW-packages/issues/2028).
+Instead, we'll build it by hand.
+
+Download the latest [version of Boost](http://www.boost.org/users/download/) and unzip it to your `mingw64` home directory (which will be of the form `/mingw64/home/$USERNAME` in the MinGW64 shell, or equivalently `C:\msys64\home\$USERNAME` in the Windows file explorer).
+
+Then build Boost:
+```
+cd ~/boost_1_63_0
+./bootstrap.sh
+./b2 include=/mingw64/include/python3.5m --with-python
+```
+
+Rename the generated library to something that `cmake` will find:
+```
+cd stage/lib
+mv libboost_python-mgw63-mt-1_63.a libboost_python3-mt.a
+```
+
+Then, run through the following steps to clone and build Antimony:
+```
+cd ~
+git clone https://github.com/mkeeter/antimony
+cd antimony
+mkdir build
+cd build
+BOOST_ROOT=~/boost_1_63_0/ BOOST_LIBRARYDIR=~/boost_1_63_0/stage/ /mingw64/bin/cmake -G"MSYS Makefiles" ..
+make -j8
+```
+
+To invoke Antimony from the build folder, call
+```
+PYTHONHOME=/mingw64 ./app/antimony.exe
+```
+

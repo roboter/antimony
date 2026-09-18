@@ -59,6 +59,13 @@ QStringList App::nodePaths() const
     // If we're running Antimony from the build folder, use sb/nodes
     paths << applicationDirPath() + "/sb/nodes";
     paths << applicationDirPath() + "/../share/antimony/nodes";
+#elif defined Q_OS_OPENBSD
+    // If we're running Antimony from the build folder, use sb/nodes
+    paths << applicationDirPath() + "/sb/nodes";
+    paths << applicationDirPath() + "/../share/antimony/nodes";
+#elif defined Q_OS_WIN32
+    // Windows only supports running from the build directory
+    paths << applicationDirPath() + "/sb/nodes";
 #else
 #error "Unknown OS!"
 #endif
@@ -81,18 +88,23 @@ QStringList App::nodePaths() const
         }
     }
 
-    return existing_paths.toList();
+    return existing_paths.values();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void App::onNew()
 {
-    graph->clear();
-    filename.clear();
-    undo_stack->clear();
+    if (undo_stack->isClean() || QMessageBox::question(
+                NULL, "Discard unsaved changes?",
+                "Discard unsaved changes?") == QMessageBox::Yes)
+    {
+        graph->clear();
+        filename.clear();
+        undo_stack->clear();
 
-    emit(filenameChanged(""));
+        emit(filenameChanged(""));
+    }
 }
 
 void App::onSave()
@@ -118,6 +130,9 @@ void App::onSaveAs()
     {
 #ifdef Q_OS_LINUX
         if (!f.endsWith(".sb"))
+            f += ".sb";
+#elif defined Q_OS_OPENBSD
+	if (!f.endsWith(".sb"))
             f += ".sb";
 #endif
         if (!QFileInfo(QFileInfo(f).path()).isWritable())

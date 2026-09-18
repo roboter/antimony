@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 project(Antimony)
 set(CMAKE_BUILD_TYPE RELEASE)
 
@@ -8,20 +8,16 @@ set(CMAKE_CXX_FLAGS_DEBUG    "-O0")
 
 ################################################################################
 
-find_package(PythonLibs 3.3 REQUIRED)
+find_package(Python 3.3 REQUIRED COMPONENTS Interpreter Development)
 
-if (APPLE)
-    find_package(Boost REQUIRED COMPONENTS python3)
-elseif (UNIX)
-    foreach (PYTHON_NAME python3 python-py35 python-py34)
-        find_package(Boost QUIET COMPONENTS ${PYTHON_NAME})
-        if (${Boost_FOUND})
-            break()
-        endif()
-    endforeach()
-    if (NOT ${Boost_FOUND})
-        message(FATAL_ERROR "Could not find boost::python3")
-    endif()
+if (WIN32)
+    add_definitions("-DBOOST_PYTHON_STATIC_LIB")
+endif()
+
+find_package(Boost REQUIRED COMPONENTS python${Python_VERSION_MAJOR}${Python_VERSION_MINOR})
+
+if (NOT ${Boost_FOUND})
+    message(FATAL_ERROR "Could not find boost::python3")
 endif()
 
 ################################################################################

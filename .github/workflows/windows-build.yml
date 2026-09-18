@@ -1,0 +1,56 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [ "master", "main", "feature/win32-build" ]
+    tags:
+      - '*'
+  pull_request:
+    branches: [ "master", "main", "feature/win32-build" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: UCRT64
+        update: true
+        install: >-
+          mingw-w64-ucrt-x86_64-toolchain
+          mingw-w64-ucrt-x86_64-qt5
+          mingw-w64-ucrt-x86_64-python
+          mingw-w64-ucrt-x86_64-boost
+          mingw-w64-ucrt-x86_64-libpng
+          mingw-w64-ucrt-x86_64-cmake
+          mingw-w64-ucrt-x86_64-ninja
+          flex
+          lemon
+
+    - name: Build Antimony
+      shell: msys2 {0}
+      run: |
+        mkdir -p build
+        cd build
+        cmake -G Ninja ..
+        ninja
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: antimony-windows-build
+        path: build/app/
+
+    - name: Zip Release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: Compress-Archive -Path build/app -DestinationPath antimony-windows.zip
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: antimony-windows.zip

@@ -41,16 +41,17 @@ jobs:
         cd build
         cmake -G Ninja ..
         ninja
+        mv app antimony
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: antimony-windows-build
-        path: build/app/
+        path: build/antimony/
 
     - name: Zip Release
       if: startsWith(github.ref, 'refs/tags/')
-      run: Compress-Archive -Path build/app -DestinationPath antimony-windows.zip
+      run: Compress-Archive -Path build/antimony -DestinationPath antimony-windows.zip
 
     - name: Release
       uses: softprops/action-gh-release@v2

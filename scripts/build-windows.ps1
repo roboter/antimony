@@ -43,4 +43,4 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Build completed successfully!" -ForegroundColor Green
-Write-Host "You can run Antimony from: $repoRoot\build\app\antimony.exe" -ForegroundColor Green
+Write-Host "You can run Antimony from: $repoRoot\build\antimony\antimony.exe" -ForegroundColor Green

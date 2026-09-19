@@ -30,20 +30,22 @@ jobs:
         cmake -DCMAKE_PREFIX_PATH=$(brew --prefix qt@5) -GNinja ..
         ninja
 
+    - name: Create DMG
+      run: |
+        mkdir -p dmg_root
+        cp -R build/app/Antimony.app dmg_root/
+        ln -s /Applications dmg_root/Applications
+        hdiutil create -volname "Antimony" -srcfolder dmg_root -ov -format UDZO antimony-mac.dmg
+        rm -rf dmg_root
+
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: antimony-mac-build
-        path: build/app/Antimony.app
-
-    - name: Zip Release
-      if: startsWith(github.ref, 'refs/tags/')
-      run: |
-        cd build/app
-        zip -r ../../antimony-mac.zip Antimony.app
+        path: antimony-mac.dmg
 
     - name: Release
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: antimony-mac.zip
+        files: antimony-mac.dmg

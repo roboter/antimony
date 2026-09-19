@@ -19,7 +19,7 @@ if (-Not (Test-Path $msys2BinPath)) {
 $env:PATH = "$msys2BinPath;" + $env:PATH
 
 $repoRoot = (Get-Item $PSScriptRoot).Parent.FullName
-$exePath = Join-Path $repoRoot "build\app\antimony.exe"
+$exePath = Join-Path $repoRoot "build\antimony\antimony.exe"
 
 if (-Not (Test-Path $exePath)) {
     Write-Host "Antimony executable not found at $exePath." -ForegroundColor Red

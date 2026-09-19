@@ -23,30 +23,15 @@ jobs:
         brew update || true
         brew install libpng boost-python3 qt@5 lemon flex ninja cmake dylibbundler
 
-    - name: Build Antimony
+    - name: Build Antimony and Create DMG
       run: |
-        mkdir -p build
-        cd build
-        cmake -DCMAKE_PREFIX_PATH=$(brew --prefix qt@5) -GNinja ..
-        ninja
-
-    - name: Bundle macOS App Dependencies
-      run: |
-        chmod +x scripts/bundle-mac.sh
-        ./scripts/bundle-mac.sh build/app/Antimony.app
-
-    - name: Create DMG
-      run: |
-        mkdir -p dmg_root
-        cp -R build/app/Antimony.app dmg_root/
-        ln -s /Applications dmg_root/Applications
-        hdiutil create -volname "Antimony" -srcfolder dmg_root -ov -format UDZO antimony-mac.dmg
-        rm -rf dmg_root
+        chmod +x scripts/build-mac.sh scripts/bundle-mac.sh
+        ./scripts/build-mac.sh --dmg --skip-deps
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: antimony-mac-build
+        name: antimony-mac.dmg
         path: antimony-mac.dmg
 
     - name: Release

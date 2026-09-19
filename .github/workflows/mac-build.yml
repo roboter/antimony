@@ -21,7 +21,7 @@ jobs:
     - name: Install dependencies
       run: |
         brew update || true
-        brew install libpng python@3.11 boost-python3 qt@5 lemon flex ninja cmake
+        brew install libpng boost-python3 qt@5 lemon flex ninja cmake dylibbundler
 
     - name: Build Antimony
       run: |
@@ -29,6 +29,11 @@ jobs:
         cd build
         cmake -DCMAKE_PREFIX_PATH=$(brew --prefix qt@5) -GNinja ..
         ninja
+
+    - name: Bundle macOS App Dependencies
+      run: |
+        chmod +x scripts/bundle-mac.sh
+        ./scripts/bundle-mac.sh build/app/Antimony.app
 
     - name: Create DMG
       run: |

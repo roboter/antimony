@@ -74,9 +74,15 @@ bool ScriptNode::makeDatum(std::string n, PyTypeObject* type,
 
     script.active.insert(d);
 
-    // Inject this variable into the script's namespace
-    script.inject(n.c_str(), d->currentValue());
-    saveLookup(n, &script);
+    // Inject this variable into the script's namespace.
+    // currentValue() may be NULL if the datum has never successfully
+    // evaluated; skip injection in that case (the script will see a
+    // NameError, which is handled gracefully by the error path).
+    if (auto v = d->currentValue())
+    {
+        script.inject(n.c_str(), v);
+        saveLookup(n, &script);
+    }
 
     return true;
 }

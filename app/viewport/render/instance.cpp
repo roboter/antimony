@@ -7,8 +7,9 @@
 
 RenderInstance::RenderInstance(
         BaseDatumProxy* parent, ViewportView* view, bool sub)
-    : QObject(), sub(sub), M(view->getMatrix()),
-      clip(view->geometry().width(), view->geometry().height()),
+    : QObject(), sub(sub), view(view), M(view->getMatrix()),
+      clip(view->geometry().width()  * view->devicePixelRatioF(),
+           view->geometry().height() * view->devicePixelRatioF()),
       image(this, view)
 {
     connect(parent, &QObject::destroyed, this, &RenderInstance::makeOrphan);
@@ -56,7 +57,10 @@ void RenderInstance::datumChanged(Datum* d)
 void RenderInstance::viewChanged(QMatrix4x4 m, QRect clip_)
 {
     M = m;
-    clip = {float(clip_.width()), float(clip_.height())};
+    // clip_ is in logical pixels; multiply by devicePixelRatioF to get
+    // physical pixel dimensions for correct render resolution on Retina displays.
+    const float dpr = view->devicePixelRatioF();
+    clip = {float(clip_.width()) * dpr, float(clip_.height()) * dpr};
     setPending();
 }
 

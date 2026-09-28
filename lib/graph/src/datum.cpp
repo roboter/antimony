@@ -1,3 +1,4 @@
+#include <cstdio>
 #include "graph/datum.h"
 #include "graph/node.h"
 #include "graph/graph_node.h"
@@ -87,6 +88,8 @@ PyObject* Datum::getValue()
     {
         error = getPyError().first;
         PyErr_Clear();
+        fprintf(stderr, "[DATUM] node='%s' datum='%s' error: %s\n",
+                parent->getName().c_str(), name.c_str(), error.c_str());
     }
 
     Py_DECREF(locals);
@@ -178,15 +181,39 @@ void Datum::writeLinkExpression(const std::unordered_set<const Datum*> links)
     std::string out;
     if (links.empty())
     {
-        assert(value);
-        auto s = PyObject_Repr(value);
-        assert(!PyErr_Occurred());
+        // value may be NULL if the datum was never valid (e.g. the upstream
+        // was deleted before this datum ever successfully evaluated).
+        // In that case fall back to the type's default repr so the expression
+        // is at least syntactically valid.
+        PyObject* repr_src = value;
+        PyObject* default_val = nullptr;
+        if (!repr_src)
+        {
+            default_val = PyObject_CallFunctionObjArgs((PyObject*)type, NULL);
+            if (PyErr_Occurred())
+                PyErr_Clear();
+            repr_src = default_val;
+        }
 
-        // Get string from Python
-        const std::string e(PyUnicode_AsUTF8(s));
+        if (repr_src)
+        {
+            auto s = PyObject_Repr(repr_src);
+            if (s)
+            {
+                const std::string e(PyUnicode_AsUTF8(s));
+                out = isFromSubgraph() ? SIGIL_SUBGRAPH_OUTPUT + e : e;
+                Py_DECREF(s);
+            }
+        }
+        Py_XDECREF(default_val);
 
-        // Preserve subgraph sigil if present
-        out = isFromSubgraph() ? SIGIL_SUBGRAPH_OUTPUT + e : e;
+        // If we still have no expression (type has no default), leave
+        // the datum in an invalid-but-non-crashing state.
+        if (out.empty())
+        {
+            setText("");
+            return;
+        }
     }
     else
     {
@@ -308,6 +335,8 @@ void Datum::update()
     {
         valid = false;
         changed = true;
+        fprintf(stderr, "[DATUM] node='%s' datum='%s' became invalid: %s\n",
+                parent->getName().c_str(), name.c_str(), error.c_str());
     }
 
     // If we've gone from invalid to valid or gotten a different object,
@@ -358,9 +387,19 @@ DatumState Datum::getState() const
 {
     auto trimmed = trimSigil(expr);
 
-    auto r = PyObject_Repr(value);
-    std::string repr(PyUnicode_AsUTF8(r));
-    Py_DECREF(r);
+    // value may be NULL when the datum is invalid (e.g. after a dependency
+    // was deleted). Guard against passing NULL to PyObject_Repr to avoid a
+    // crash, and use an empty string as the representation in that case.
+    std::string repr;
+    if (value)
+    {
+        auto r = PyObject_Repr(value);
+        if (r)
+        {
+            repr = std::string(PyUnicode_AsUTF8(r));
+            Py_DECREF(r);
+        }
+    }
 
     return (DatumState){
         trimmed.first, repr, trimmed.second ? expr.front() : SIGIL_NONE,

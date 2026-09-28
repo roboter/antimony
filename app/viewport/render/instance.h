@@ -66,10 +66,13 @@ protected:
      *  If null, we shouldn't be rendering this shape  */
     PyObject* shape=nullptr;
 
+    /*  Pointer to the viewport view (used to query devicePixelRatioF) */
+    ViewportView* view;
+
     /*  Current transform matrix  */
     QMatrix4x4 M;
 
-    /*  Window size (used for clipping) */
+    /*  Window size (used for clipping, in physical pixels) */
     QVector2D clip;
 
     /*  Set to true if we should render again after the task finishes  */

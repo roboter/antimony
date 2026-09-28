@@ -128,19 +128,25 @@ void DepthImage::loadSharedShaderVariables(
                           2 * sizeof(GLfloat), 0);
 
     // Load image's screen position into shader
+    // On macOS Retina displays, the OpenGL framebuffer is in physical pixels
+    // but QWidget::width()/height() returns logical pixels. We must use the
+    // physical pixel dimensions for correct shader uniform calculations.
     const GLuint offset_loc = shader->uniformLocation("offset");
     QPointF center = view->mapFromScene((m * pos).toPoint());
+    const float dpr = view->devicePixelRatioF();
+    const float physWidth  = view->width()  * dpr;
+    const float physHeight = view->height() * dpr;
 
     glUniform2f(
             offset_loc,
-             2*(center.x() - view->width()/2) / view->width(),
-            -2*(center.y() - view->height()/2) / view->height());
+             2*(center.x() * dpr - physWidth/2)  / physWidth,
+            -2*(center.y() * dpr - physHeight/2) / physHeight);
 
     // Load image's width and height into shader
     const GLuint width_loc = shader->uniformLocation("width");
     const GLuint height_loc = shader->uniformLocation("height");
-    glUniform1f(width_loc, (size.x() * scale) / view->width());
-    glUniform1f(height_loc, (size.y() * scale) / view->height());
+    glUniform1f(width_loc,  (size.x() * scale) / physWidth);
+    glUniform1f(height_loc, (size.y() * scale) / physHeight);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, depth_tex);

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(Antimony)
 set(CMAKE_BUILD_TYPE RELEASE)
 
@@ -14,6 +14,7 @@ if (WIN32)
     add_definitions("-DBOOST_PYTHON_STATIC_LIB")
 endif()
 
+cmake_policy(SET CMP0167 NEW)
 find_package(Boost REQUIRED COMPONENTS python${Python_VERSION_MAJOR}${Python_VERSION_MINOR})
 
 if (NOT ${Boost_FOUND})

@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <Python.h>
 
 #include "graph/script.h"
@@ -49,6 +50,8 @@ void Script::update()
         error = err.first;
         error_lineno = err.second;
         PyErr_Clear();
+        fprintf(stderr, "[SCRIPT] node='%s' line=%d error: %s\n",
+                parent->getName().c_str(), error_lineno, error.c_str());
     }
 
     Py_DECREF(globals);

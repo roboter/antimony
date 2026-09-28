@@ -1,6 +1,11 @@
 #include <Python.h>
 
 #include <QDebug>
+#include <QDateTime>
+#include <QFile>
+#include <QDir>
+#include <QTextStream>
+#include <QStandardPaths>
 
 #include <QCommandLineParser>
 #include <QStandardPaths>
@@ -11,11 +16,89 @@
 #include <QStringList>
 #include <QMessageBox>
 
+#include <stdexcept>
+#include <exception>
+
 #include "app/app.h"
 #include "graph/hooks/hooks.h"
 
 #include "fab/fab.h"
 #include "graph/graph.h"
+
+////////////////////////////////////////////////////////////////////////////////
+// Logging
+////////////////////////////////////////////////////////////////////////////////
+
+static QFile* g_log_file = nullptr;
+static QTextStream* g_log_stream = nullptr;
+
+static void messageHandler(QtMsgType type, const QMessageLogContext& ctx, const QString& msg)
+{
+    Q_UNUSED(ctx);
+    const char* level = "DEBUG";
+    switch (type)
+    {
+        case QtDebugMsg:    level = "DEBUG"; break;
+        case QtInfoMsg:     level = "INFO";  break;
+        case QtWarningMsg:  level = "WARN";  break;
+        case QtCriticalMsg: level = "ERROR"; break;
+        case QtFatalMsg:    level = "FATAL"; break;
+    }
+
+    const QString timestamp = QDateTime::currentDateTime().toString(
+            Qt::ISODateWithMs);
+    const QString line = QString("[%1] [%2] %3")
+            .arg(timestamp)
+            .arg(QString(level))
+            .arg(msg);
+
+    // Write to log file if open
+    if (g_log_stream)
+    {
+        *g_log_stream << line << '\n';
+        g_log_stream->flush();
+    }
+
+    // Always mirror to stderr so it shows up in Xcode / terminal
+    fprintf(stderr, "%s\n", line.toUtf8().constData());
+
+    if (type == QtFatalMsg)
+        abort();
+}
+
+static void initLogging()
+{
+    // Standard macOS log location: ~/Library/Logs/Antimony/
+    // On other platforms, log next to the app data directory.
+#if defined(Q_OS_MAC)
+    const QString log_dir = QDir::homePath() + "/Library/Logs/Antimony";
+#else
+    const QString log_dir = QStandardPaths::writableLocation(
+            QStandardPaths::AppLocalDataLocation) + "/logs";
+#endif
+    QDir().mkpath(log_dir);
+    const QString log_path = log_dir + "/antimony.log";
+
+    g_log_file = new QFile(log_path);
+    if (g_log_file->open(QIODevice::Append | QIODevice::Text))
+    {
+        g_log_stream = new QTextStream(g_log_file);
+        // Write a separator so each run is easy to find
+        *g_log_stream << "\n=== Antimony started "
+                      << QDateTime::currentDateTime().toString(Qt::ISODate)
+                      << " ===\n";
+        g_log_stream->flush();
+        qInstallMessageHandler(messageHandler);
+        qInfo() << "Log file:" << log_path;
+    }
+    else
+    {
+        fprintf(stderr, "[WARN] Could not open log file: %s\n",
+                log_path.toUtf8().constData());
+        delete g_log_file;
+        g_log_file = nullptr;
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -30,6 +113,9 @@ int main(int argc, char *argv[])
 
     // Create the Application object
     App app(argc, argv);
+
+    // Set up file logging as early as possible so we capture everything
+    initLogging();
 
     // Initialize various Python modules and the interpreter itself
     fab::preInit();
@@ -68,7 +154,7 @@ int main(int argc, char *argv[])
         {
             fab_paths.push_back(p.toStdString());
         }
-        fab::postInit(fab_paths);	
+        fab::postInit(fab_paths);
 #elif defined Q_OS_WIN32
         auto dir = QCoreApplication::applicationDirPath();
         fab::postInit({(dir + "/sb").toStdString()});
@@ -121,5 +207,23 @@ int main(int argc, char *argv[])
     }
 
     app.makeDefaultWindows();
-    return app.exec();
+
+    // Run event loop, catching any unhandled C++ exceptions so they appear
+    // in the log before the process terminates.
+    int exit_code = 0;
+    try
+    {
+        exit_code = app.exec();
+    }
+    catch (const std::exception& e)
+    {
+        qCritical() << "Unhandled exception:" << e.what();
+        throw;
+    }
+    catch (...)
+    {
+        qCritical() << "Unhandled unknown exception";
+        throw;
+    }
+    return exit_code;
 }

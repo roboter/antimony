@@ -87,10 +87,13 @@ void DatumEditor::update(const DatumState& state)
     setEnabled(state.sigil == Datum::SIGIL_NONE);
     setDefaultTextColor(isEnabled() ? Colors::base04 : Colors::base03);
 
-    // Store validity and set tooltip if there was a Python evaluation error.
+    // Store validity; update appearance and tooltip on change.
+    const bool was_valid = valid;
     valid = state.valid;
     if (!state.valid)
     {
+        // Highlight the text red so the invalid field is immediately obvious
+        setDefaultTextColor(Colors::red);
         setToolTip(QString::fromStdString(state.error));
     }
     else
@@ -98,6 +101,10 @@ void DatumEditor::update(const DatumState& state)
         setToolTip("");
         QToolTip::hideText();
     }
+
+    // Force a repaint whenever validity toggles so the background redraws
+    if (valid != was_valid)
+        QGraphicsItem::update();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -152,12 +159,23 @@ void DatumEditor::paint(QPainter* painter,
                                const QStyleOptionGraphicsItem* o,
                                QWidget* w)
 {
-    painter->setBrush(Colors::base02);
     if (valid)
+    {
+        // Normal background
+        painter->setBrush(Colors::base02);
         painter->setPen(Qt::NoPen);
+        painter->drawRect(boundingRect().adjusted(-1, 1, 1, -1));
+    }
     else
+    {
+        // Invalid: red-tinted background + thick red border for clear feedback
+        const QColor invalid_bg(Colors::red.red(),
+                                Colors::red.green(),
+                                Colors::red.blue(), 50);
+        painter->setBrush(invalid_bg);
         painter->setPen(QPen(Colors::red, 2));
-    painter->drawRect(boundingRect().adjusted(-1, 1, 1, -1));
+        painter->drawRoundedRect(boundingRect().adjusted(-1, 1, 1, -1), 3, 3);
+    }
     QGraphicsTextItem::paint(painter, o, w);
 }
 

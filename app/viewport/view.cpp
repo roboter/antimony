@@ -28,41 +28,49 @@ namespace {
 struct CubeFaceDef {
     const char* name;
     QVector3D normal;
+    QVector3D vec_right;
+    QVector3D vec_up;
     QVector3D corners[4];
     float target_yaw;
     float target_pitch;
 };
 
-const float S = 22.0f;
+const float S = 44.0f;
 
 const CubeFaceDef CUBE_FACES[6] = {
     // TOP (+Z)
     {"TOP", QVector3D(0, 0, 1),
+     QVector3D(1, 0, 0), QVector3D(0, 1, 0),
      {QVector3D(-S, -S,  S), QVector3D( S, -S,  S), QVector3D( S,  S,  S), QVector3D(-S,  S,  S)},
      0.0f, 0.0f},
 
     // BOTTOM (-Z)
     {"BTM", QVector3D(0, 0, -1),
+     QVector3D(1, 0, 0), QVector3D(0, -1, 0),
      {QVector3D(-S,  S, -S), QVector3D( S,  S, -S), QVector3D( S, -S, -S), QVector3D(-S, -S, -S)},
      0.0f, -float(M_PI)},
 
     // FRONT (-Y)
     {"FRONT", QVector3D(0, -1, 0),
+     QVector3D(1, 0, 0), QVector3D(0, 0, 1),
      {QVector3D(-S, -S, -S), QVector3D( S, -S, -S), QVector3D( S, -S,  S), QVector3D(-S, -S,  S)},
      0.0f, -float(M_PI) / 2.0f},
 
     // BACK (+Y)
     {"BACK", QVector3D(0, 1, 0),
+     QVector3D(-1, 0, 0), QVector3D(0, 0, 1),
      {QVector3D( S,  S, -S), QVector3D(-S,  S, -S), QVector3D(-S,  S,  S), QVector3D( S,  S,  S)},
      -float(M_PI), -float(M_PI) / 2.0f},
 
     // RIGHT (+X)
     {"RIGHT", QVector3D(1, 0, 0),
+     QVector3D(0, 1, 0), QVector3D(0, 0, 1),
      {QVector3D( S, -S, -S), QVector3D( S,  S, -S), QVector3D( S,  S,  S), QVector3D( S, -S,  S)},
      -float(M_PI) / 2.0f, -float(M_PI) / 2.0f},
 
     // LEFT (-X)
     {"LEFT", QVector3D(-1, 0, 0),
+     QVector3D(0, -1, 0), QVector3D(0, 0, 1),
      {QVector3D(-S,  S, -S), QVector3D(-S, -S, -S), QVector3D(-S, -S,  S), QVector3D(-S,  S,  S)},
      float(M_PI) / 2.0f, -float(M_PI) / 2.0f}
 };
@@ -249,7 +257,7 @@ void ViewportView::drawForeground(QPainter* painter, const QRectF& rect)
 
 void ViewportView::drawViewCube(QPainter* painter) const
 {
-    if (ui_hidden || width() < 120 || height() < 120)
+    if (ui_hidden || width() < 240 || height() < 240)
     {
         return;
     }
@@ -258,8 +266,8 @@ void ViewportView::drawViewCube(QPainter* painter) const
     painter->setRenderHint(QPainter::Antialiasing, true);
     painter->setRenderHint(QPainter::TextAntialiasing, true);
 
-    const QPointF cube_center(width() / 2.0f - 55.0f, -height() / 2.0f + 55.0f);
-    const float disc_radius = 46.0f;
+    const QPointF cube_center(width() / 2.0f - 110.0f, -height() / 2.0f + 110.0f);
+    const float disc_radius = 92.0f;
 
     // 1. Draw backdrop disc with subtle gradient and rim
     QRadialGradient bg(cube_center, disc_radius);
@@ -267,23 +275,23 @@ void ViewportView::drawViewCube(QPainter* painter) const
     bg.setColorAt(0.85, QColor(24, 27, 32, 215));
     bg.setColorAt(1.0, QColor(18, 20, 24, 225));
     painter->setBrush(bg);
-    painter->setPen(QPen(QColor(255, 255, 255, 30), 1.2));
+    painter->setPen(QPen(QColor(255, 255, 255, 30), 1.5));
     painter->drawEllipse(cube_center, disc_radius, disc_radius);
 
     // Subtle inner compass ring & cardinal tick marks
     painter->setBrush(Qt::NoBrush);
     painter->setPen(QPen(QColor(255, 255, 255, 14), 1.0));
-    painter->drawEllipse(cube_center, 40.0f, 40.0f);
+    painter->drawEllipse(cube_center, 80.0f, 80.0f);
 
-    painter->setPen(QPen(QColor(255, 255, 255, 45), 1.5));
-    painter->drawLine(QPointF(cube_center.x(), cube_center.y() - disc_radius + 2),
-                     QPointF(cube_center.x(), cube_center.y() - disc_radius + 6));
-    painter->drawLine(QPointF(cube_center.x(), cube_center.y() + disc_radius - 6),
-                     QPointF(cube_center.x(), cube_center.y() + disc_radius - 2));
-    painter->drawLine(QPointF(cube_center.x() - disc_radius + 2, cube_center.y()),
-                     QPointF(cube_center.x() - disc_radius + 6, cube_center.y()));
-    painter->drawLine(QPointF(cube_center.x() + disc_radius - 6, cube_center.y()),
-                     QPointF(cube_center.x() + disc_radius - 2, cube_center.y()));
+    painter->setPen(QPen(QColor(255, 255, 255, 45), 2.0));
+    painter->drawLine(QPointF(cube_center.x(), cube_center.y() - disc_radius + 3),
+                     QPointF(cube_center.x(), cube_center.y() - disc_radius + 10));
+    painter->drawLine(QPointF(cube_center.x(), cube_center.y() + disc_radius - 10),
+                     QPointF(cube_center.x(), cube_center.y() + disc_radius - 3));
+    painter->drawLine(QPointF(cube_center.x() - disc_radius + 3, cube_center.y()),
+                     QPointF(cube_center.x() - disc_radius + 10, cube_center.y()));
+    painter->drawLine(QPointF(cube_center.x() + disc_radius - 10, cube_center.y()),
+                     QPointF(cube_center.x() + disc_radius - 3, cube_center.y()));
 
     // 2. Transform cube faces
     const QMatrix4x4 R = getMatrix(ROT);
@@ -324,7 +332,7 @@ void ViewportView::drawViewCube(QPainter* painter) const
     const QVector3D light_dir = QVector3D(0.35f, 0.45f, 0.82f).normalized();
 
     QFont font = painter->font();
-    font.setPointSize(8);
+    font.setPointSize(13);
     font.setBold(true);
     painter->setFont(font);
     QFontMetrics fm(font);
@@ -346,7 +354,7 @@ void ViewportView::drawViewCube(QPainter* painter) const
             int g = qBound(0, int(135 * factor + 50), 255);
             int b = qBound(0, int(220 * factor + 35), 255);
             face_color = QColor(r, g, b, 245);
-            edge_pen = QPen(QColor(170, 235, 255, 255), 2.0);
+            edge_pen = QPen(QColor(170, 235, 255, 255), 3.0);
         }
         else
         {
@@ -355,7 +363,7 @@ void ViewportView::drawViewCube(QPainter* painter) const
             int g = qBound(0, int(58 * factor), 255);
             int b = qBound(0, int(70 * factor), 255);
             face_color = QColor(r, g, b, 230);
-            edge_pen = QPen(QColor(110, 125, 145, 220), 1.5);
+            edge_pen = QPen(QColor(110, 125, 145, 220), 2.0);
         }
 
         painter->setPen(edge_pen);
@@ -366,17 +374,32 @@ void ViewportView::drawViewCube(QPainter* painter) const
         float text_alpha = qBound(0.0f, (vf.z - 0.15f) / 0.25f, 1.0f);
         if (text_alpha > 0.05f)
         {
-            const QString name = CUBE_FACES[vf.index].name;
-            QRect text_rect = fm.boundingRect(name);
+            const auto& face_def = CUBE_FACES[vf.index];
+            QVector3D r_cam = R * face_def.vec_right;
+            QVector3D u_cam = R * face_def.vec_up;
 
+            QPointF r_screen(r_cam.x(), -r_cam.y());
+            QPointF u_screen(u_cam.x(), -u_cam.y());
+
+            painter->save();
+            painter->translate(vf.center);
+            QTransform rot(
+                r_screen.x(),  r_screen.y(),
+                -u_screen.x(), -u_screen.y(),
+                0, 0
+            );
+            painter->setTransform(rot, true);
+
+            const QString name = face_def.name;
             QColor text_color = is_hovered ? QColor(255, 255, 255)
                                            : QColor(220, 230, 240);
             text_color.setAlphaF(text_color.alphaF() * text_alpha);
 
             painter->setPen(text_color);
-            painter->drawText(QPointF(vf.center.x() - text_rect.width() / 2.0f,
-                                      vf.center.y() + text_rect.height() / 3.0f),
-                              name);
+            QRectF text_box(-S, -S, S * 2, S * 2);
+            painter->drawText(text_box, Qt::AlignCenter, name);
+
+            painter->restore();
         }
     }
 
@@ -385,14 +408,14 @@ void ViewportView::drawViewCube(QPainter* painter) const
 
 int ViewportView::viewCubeFaceAt(QPointF scene_pos) const
 {
-    if (ui_hidden || width() < 120 || height() < 120)
+    if (ui_hidden || width() < 240 || height() < 240)
     {
         return -1;
     }
 
-    const QPointF cube_center(width() / 2.0f - 55.0f, -height() / 2.0f + 55.0f);
+    const QPointF cube_center(width() / 2.0f - 110.0f, -height() / 2.0f + 110.0f);
     const QPointF delta = scene_pos - cube_center;
-    if (delta.x() * delta.x() + delta.y() * delta.y() > 50.0f * 50.0f)
+    if (delta.x() * delta.x() + delta.y() * delta.y() > 100.0f * 100.0f)
     {
         return -1;
     }

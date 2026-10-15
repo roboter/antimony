@@ -41,7 +41,7 @@ jobs:
         cd build
         cmake -G Ninja ..
         ninja
-        mv app antimony
+        [ -d app ] && mv app antimony || true
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4

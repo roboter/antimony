@@ -8,8 +8,8 @@
 RenderInstance::RenderInstance(
         BaseDatumProxy* parent, ViewportView* view, bool sub)
     : QObject(), sub(sub), view(view), M(view->getMatrix()),
-      clip(view->geometry().width()  * view->devicePixelRatioF(),
-           view->geometry().height() * view->devicePixelRatioF()),
+      clip(view->geometry().width(),
+           view->geometry().height()),
       image(this, view)
 {
     connect(parent, &QObject::destroyed, this, &RenderInstance::makeOrphan);
@@ -57,10 +57,7 @@ void RenderInstance::datumChanged(Datum* d)
 void RenderInstance::viewChanged(QMatrix4x4 m, QRect clip_)
 {
     M = m;
-    // clip_ is in logical pixels; multiply by devicePixelRatioF to get
-    // physical pixel dimensions for correct render resolution on Retina displays.
-    const float dpr = view->devicePixelRatioF();
-    clip = {float(clip_.width()) * dpr, float(clip_.height()) * dpr};
+    clip = {float(clip_.width()), float(clip_.height())};
     setPending();
 }
 
@@ -99,13 +96,13 @@ void RenderInstance::onTaskFinished()
                          current->color, current->flat);
 
             // Dynamically adjust default refinement level based on render time
-            if (current->render_time < 25)
+            if (current->render_time < 35)
             {
                 starting_refinement = std::max(1, starting_refinement - 1);
             }
             else
             {
-                starting_refinement = std::min(starting_refinement + 1, 5);
+                starting_refinement = std::min(starting_refinement + 1, 2);
             }
 
             // If we don't have a pending render task, then begin
@@ -119,7 +116,7 @@ void RenderInstance::onTaskFinished()
         else
         {   // If we didn't have enough time to render before the abort flag
             // went up, then increase the starting refinement here
-            starting_refinement = std::min(starting_refinement + 1, 5);
+            starting_refinement = std::min(starting_refinement + 1, 2);
         }
 
         if (!restarted)
@@ -145,7 +142,8 @@ void RenderInstance::startNextRender()
     assert(orphan == false);
 
     Q_ASSERT(starting_refinement >= 1);
-    current.reset(new RenderTask(this, shape, M, clip, starting_refinement));
+    const float dpr = view ? view->devicePixelRatioF() : 1.0f;
+    current.reset(new RenderTask(this, shape, M, clip, starting_refinement, dpr));
 
     pending = false;
 }

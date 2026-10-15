@@ -9,8 +9,8 @@
 #include "fab/tree/render.h"
 
 RenderTask::RenderTask(RenderInstance* parent, PyObject* s, QMatrix4x4 M,
-                       QVector2D clip, int refinement)
-    : shape(s), M(M), clip(clip), refinement(refinement)
+                       QVector2D clip, int refinement, float dpr)
+    : shape(s), M(M), clip(clip), refinement(refinement), dpr(dpr)
 {
     Py_INCREF(shape);
 
@@ -34,7 +34,7 @@ void RenderTask::halt()
 RenderTask* RenderTask::getNext(RenderInstance* parent) const
 {
     return refinement > 1
-        ? new RenderTask(parent, shape, M, clip, refinement - 1)
+        ? new RenderTask(parent, shape, M, clip, refinement - 1, dpr)
         : NULL;
 }
 
@@ -49,7 +49,7 @@ void RenderTask::async()
     const Shape& s = get_shape();
 
     if (!std::isinf(s.bounds.xmin) && !std::isinf(s.bounds.xmax) &&
-        !std::isinf(s.bounds.xmin) && !std::isinf(s.bounds.xmax))
+        !std::isinf(s.bounds.ymin) && !std::isinf(s.bounds.ymax))
     {
         if (std::isinf(s.bounds.zmin) || std::isinf(s.bounds.zmax))
         {
@@ -79,7 +79,7 @@ void RenderTask::render3d(const Shape& s)
     Transform T = getTransform(M);
     Shape transformed = s.map(T);
 
-    Bounds b = render(&transformed, transformed.bounds, 1.0 / refinement);
+    Bounds b = render(&transformed, transformed.bounds, dpr / float(refinement));
 
     {   // Apply a transform-less mapping to the bounds
         auto m = M;
@@ -118,7 +118,7 @@ void RenderTask::render2d(const Shape& s)
                          s.bounds.xmax, s.bounds.ymax, 0.0001).
                  map(getTransform(M));
 
-    Bounds b3d = render(&transformed, b3d_, 1.0 / refinement);
+    Bounds b3d = render(&transformed, b3d_, dpr / float(refinement));
 
     {   // Apply a transform-less mapping to the bounds
         auto m = M;
@@ -139,16 +139,20 @@ void RenderTask::render2d(const Shape& s)
         bool direction = M(2,2) > 0;
         for (int j=0; j < depth.height(); ++j)
         {
+            uint8_t* row = depth.scanLine(j);
             for (int i=0; i < depth.width(); ++i)
             {
-                uint8_t pix = depth.pixel(i, j) & 0xff;
-                if (pix)
+                uint8_t a = row[i * 4 + 3];
+                if (a)
                 {
+                    uint8_t pix = row[i * 4 + 0];
                     if (direction)
-                        pix *= j / float(depth.height());
+                        pix = uint8_t(pix * (j / float(depth.height())));
                     else
-                        pix *= 1 - j / float(depth.height());
-                    depth.setPixel(i, j, pix | (pix << 8) | (pix << 16));
+                        pix = uint8_t(pix * (1.0f - j / float(depth.height())));
+                    row[i * 4 + 0] = pix;
+                    row[i * 4 + 1] = pix;
+                    row[i * 4 + 2] = pix;
                 }
             }
         }
@@ -161,7 +165,21 @@ void RenderTask::render2d(const Shape& s)
         float len = sqrt(pow(xy, 2) + pow(z, 2));
         xy /= len;
         z /= len;
-        shaded.fill((int(z * 255) << 16) | int(xy * 255));
+        uint8_t norm_r = uint8_t(xy * 255.0f);
+        uint8_t norm_g = 0;
+        uint8_t norm_b = uint8_t(z * 255.0f);
+        for (int j=0; j < shaded.height(); ++j)
+        {
+            uint8_t* row_d = depth.scanLine(j);
+            uint8_t* row_s = shaded.scanLine(j);
+            for (int i=0; i < shaded.width(); ++i)
+            {
+                row_s[i * 4 + 0] = norm_r;
+                row_s[i * 4 + 1] = norm_g;
+                row_s[i * 4 + 2] = norm_b;
+                row_s[i * 4 + 3] = row_d[i * 4 + 3];
+            }
+        }
     }
 
     flat = true;
@@ -205,11 +223,15 @@ Bounds RenderTask::render(Shape* shape, Bounds b_, float scale)
 
     Bounds b(fmax(xmin, b_.xmin), fmax(ymin, b_.ymin),  fmax(zmin, b_.zmin),
              fmin(xmax, b_.xmax), fmin(ymax, b_.ymax),  fmin(zmax, b_.zmax));
-    depth = QImage((b.xmax - b.xmin) * scale, (b.ymax - b.ymin) * scale,
-                 QImage::Format_RGB32);
-    shaded = QImage(depth.width(), depth.height(), depth.format());
 
-    depth.fill(0x000000);
+    int img_w = std::max(1, int(ceil((b.xmax - b.xmin) * scale)));
+    int img_h = std::max(1, int(ceil((b.ymax - b.ymin) * scale)));
+
+    depth = QImage(img_w, img_h, QImage::Format_RGBA8888);
+    shaded = QImage(img_w, img_h, QImage::Format_RGBA8888);
+
+    depth.fill(0);
+    shaded.fill(0);
 
     uint16_t* d16(new uint16_t[depth.width() * depth.height()]);
     uint16_t** d16_rows(new uint16_t*[depth.height()]);
@@ -240,6 +262,8 @@ Bounds RenderTask::render(Shape* shape, Bounds b_, float scale)
     // Copy from bitmap arrays into a QImage
     for (int j=0; j < depth.height(); ++j)
     {
+        uint8_t* depth_row = depth.scanLine(j);
+        uint8_t* shaded_row = shaded.scanLine(j);
         for (int i=0; i < depth.width(); ++i)
         {
             uint16_t pix16 = d16_rows[j][i];
@@ -247,17 +271,24 @@ Bounds RenderTask::render(Shape* shape, Bounds b_, float scale)
             uint8_t* norm = s8_rows[j][i];
             if (pix8)
             {
-                depth.setPixel(i, j,
-                               pix8 | (pix8 << 8) | (pix8 << 16));
+                depth_row[i * 4 + 0] = pix8;
+                depth_row[i * 4 + 1] = pix8;
+                depth_row[i * 4 + 2] = pix8;
+                depth_row[i * 4 + 3] = 255;
+
                 if (pix16 < UINT16_MAX)
                 {
-                    shaded.setPixel(i, j,
-                            norm[0] | (norm[1] << 8) | (norm[2] << 16));
+                    shaded_row[i * 4 + 0] = norm[0];
+                    shaded_row[i * 4 + 1] = norm[1];
+                    shaded_row[i * 4 + 2] = norm[2];
+                    shaded_row[i * 4 + 3] = 255;
                 }
                 else
                 {
-                    shaded.setPixel(i, j,
-                            0 | (0 << 8) | (255 << 16));
+                    shaded_row[i * 4 + 0] = 0;
+                    shaded_row[i * 4 + 1] = 0;
+                    shaded_row[i * 4 + 2] = 255;
+                    shaded_row[i * 4 + 3] = 255;
                 }
             }
         }

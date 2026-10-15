@@ -127,26 +127,20 @@ void DepthImage::loadSharedShaderVariables(
     glVertexAttribPointer(vp, 2, GL_FLOAT, false,
                           2 * sizeof(GLfloat), 0);
 
-    // Load image's screen position into shader
-    // On macOS Retina displays, the OpenGL framebuffer is in physical pixels
-    // but QWidget::width()/height() returns logical pixels. We must use the
-    // physical pixel dimensions for correct shader uniform calculations.
+    // Load image's screen position into shader with subpixel floating-point precision
     const GLuint offset_loc = shader->uniformLocation("offset");
-    QPointF center = view->mapFromScene((m * pos).toPoint());
-    const float dpr = view->devicePixelRatioF();
-    const float physWidth  = view->width()  * dpr;
-    const float physHeight = view->height() * dpr;
+    const QVector3D p = m * pos;
 
     glUniform2f(
             offset_loc,
-             2*(center.x() * dpr - physWidth/2)  / physWidth,
-            -2*(center.y() * dpr - physHeight/2) / physHeight);
+             2.0f * p.x() / view->width(),
+            -2.0f * p.y() / view->height());
 
-    // Load image's width and height into shader
+    // Load image's width and height into shader (NDC span is [-1, 1], so width is fraction of view)
     const GLuint width_loc = shader->uniformLocation("width");
     const GLuint height_loc = shader->uniformLocation("height");
-    glUniform1f(width_loc,  (size.x() * scale) / physWidth);
-    glUniform1f(height_loc, (size.y() * scale) / physHeight);
+    glUniform1f(width_loc,  (size.x() * scale) / view->width());
+    glUniform1f(height_loc, (size.y() * scale) / view->height());
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, depth_tex);
@@ -174,6 +168,8 @@ void DepthImage::paintShaded(
 {
     auto shaded_shader = gl->getShadedShader();
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     loadSharedShaderVariables(m, shaded_shader, zmin_global, zmax_global);
 
     glActiveTexture(GL_TEXTURE0 + 1);
@@ -182,6 +178,7 @@ void DepthImage::paintShaded(
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     shaded_shader->release();
+    glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
 }
 

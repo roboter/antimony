@@ -35,18 +35,19 @@ vec4 shade(vec4 norm)
 void main() {
     vec4 depth = texture2D(depth_tex, texture_coord);
 
-    if (depth.r == 0.0f)
+    float coverage = depth.a;
+    if (coverage <= 0.005)
     {
         discard;
     }
 
-    gl_FragColor = shade(texture2D(shaded_tex, texture_coord));
+    vec4 out_color = shade(texture2D(shaded_tex, texture_coord));
+    out_color.a = smoothstep(0.0, 1.0, coverage);
+    gl_FragColor = out_color;
 
-    // Due to the way that Qt renders a GraphicsScene
-    // (with OpenGL acceleration), we're limited to the
-    // depth range of (0.5, 1].  In practice, we'll upse
-    // [0.6, 0.9]
-    float fd_local = depth.r * dz_local + zmin_local;
+    // Recover true unattenuated depth on edge pixels for gl_FragDepth
+    float d = coverage > 0.01 ? (depth.r / coverage) : depth.r;
+    float fd_local = d * dz_local + zmin_local;
     float fd_global = (fd_local - zmin_global) / dz_global;
     gl_FragDepth = 0.9 - fd_global*0.3;
 }

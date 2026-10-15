@@ -20,7 +20,7 @@ class RenderTask : public QObject
 Q_OBJECT
 public:
     RenderTask(RenderInstance* parent, PyObject* s, QMatrix4x4 M,
-               QVector2D clip, int refinement=1);
+               QVector2D clip, int refinement=1, float dpr=1.0f);
     ~RenderTask();
 
     /*
@@ -85,6 +85,9 @@ protected:
     /*  Scale factor used to reduce resolution  *
      *  1 is pixel-perfect resolution           */
     int refinement;
+
+    /*  Device pixel ratio for physical pixel rendering on High-DPI  */
+    float dpr;
 
     /*  Give RenderInstance access to internal members  */
     friend class RenderInstance;

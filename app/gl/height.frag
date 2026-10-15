@@ -13,13 +13,19 @@ uniform vec3 color;
 void main() {
     vec4 depth = texture2D(depth_tex, texture_coord);
 
-    float fd_local = depth.r * dz_local + zmin_local;
+    float coverage = depth.a;
+    if (coverage <= 0.005)
+    {
+        discard;
+    }
+
+    float d = coverage > 0.01 ? (depth.r / coverage) : depth.r;
+    float fd_local = d * dz_local + zmin_local;
     float fd_global = (fd_local - zmin_global) / dz_global;
 
-    if (depth.r == 0.0f)
-        fd_global = 0.0f;
-
-    gl_FragColor = vec4(color.r * fd_global,
-                        color.g * fd_global,
-                        color.b * fd_global, 1.0f);
+    float alpha = smoothstep(0.0, 1.0, coverage);
+    gl_FragColor = vec4(color.r * fd_global * alpha,
+                        color.g * fd_global * alpha,
+                        color.b * fd_global * alpha,
+                        alpha);
 }

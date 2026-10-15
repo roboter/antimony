@@ -5,6 +5,8 @@
 *Antimony* is a computer-aided design (CAD) tool from a parallel universe
 in which CAD software evolved from Lisp machines rather than drafting tables
 
+![Antimony](app@2x.png)
+
 This work is a spiritual successor to [kokopelli](https://github.com/mkeeter/kokopelli)
 by way of [fabserver](http://kokompe.cba.mit.edu).
 

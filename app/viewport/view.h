@@ -61,6 +61,11 @@ public:
     void resizeEvent(QResizeEvent* e) override;
 
     /*
+     *  On mouse leave, reset ViewCube hover state
+     */
+    void leaveEvent(QEvent* event) override;
+
+    /*
      *  Override key events for menu opening
      */
     void keyPressEvent(QKeyEvent* event) override;
@@ -154,6 +159,20 @@ protected:
      *  upper-left corner of the window
      */
     void drawCoords(QPainter* painter) const;
+
+    /*
+     *  Draws the 3D orientation ViewCube in the top-right corner
+     */
+    void drawViewCube(QPainter* painter) const;
+
+    /*
+     *  Returns the face index of the ViewCube under the given scene position,
+     *  or -1 if none
+     */
+    int viewCubeFaceAt(QPointF scene_pos) const;
+
+    /*  Currently hovered face on the ViewCube (-1 if none)  */
+    int hovered_cube_face = -1;
 
     /*
      *  Opens a menu that allows us to add new shapes

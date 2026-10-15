@@ -129,15 +129,22 @@ else()
     set(ANTIMONY_APP antimony)
     add_executable(${ANTIMONY_APP} ${SRC_FILES})
 
-    # Copy node and fab directory into build directory
+    set(ANTIMONY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/antimony")
+    set_target_properties(${ANTIMONY_APP} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${ANTIMONY_OUTPUT_DIR}"
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${ANTIMONY_OUTPUT_DIR}"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${ANTIMONY_OUTPUT_DIR}"
+    )
+
+    # Copy node and fab directory into build/antimony directory
     add_custom_command(TARGET ${ANTIMONY_APP} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/py/nodes
-            ${CMAKE_CURRENT_BINARY_DIR}/sb/nodes)
+            ${ANTIMONY_OUTPUT_DIR}/sb/nodes)
     add_custom_command(TARGET ${ANTIMONY_APP} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/py/fab
-            ${CMAKE_CURRENT_BINARY_DIR}/sb/fab)
+            ${ANTIMONY_OUTPUT_DIR}/sb/fab)
 
     install(TARGETS antimony
             DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

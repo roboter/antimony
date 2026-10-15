@@ -1,10 +1,16 @@
 #include <Python.h>
 
+#include <cmath>
+#include <algorithm>
+
 #include <QOpenGLWidget>
 #include <QMatrix4x4>
 #include <QMouseEvent>
 #include <QMenu>
 #include <QPropertyAnimation>
+#include <QEasingCurve>
+#include <QPainter>
+#include <QFontMetrics>
 
 #include "viewport/view.h"
 #include "viewport/scene.h"
@@ -16,6 +22,52 @@
 
 #include "graph/proxy/datum.h"
 #include "graph/constructor/populate.h"
+
+namespace {
+
+struct CubeFaceDef {
+    const char* name;
+    QVector3D normal;
+    QVector3D corners[4];
+    float target_yaw;
+    float target_pitch;
+};
+
+const float S = 22.0f;
+
+const CubeFaceDef CUBE_FACES[6] = {
+    // TOP (+Z)
+    {"TOP", QVector3D(0, 0, 1),
+     {QVector3D(-S, -S,  S), QVector3D( S, -S,  S), QVector3D( S,  S,  S), QVector3D(-S,  S,  S)},
+     0.0f, 0.0f},
+
+    // BOTTOM (-Z)
+    {"BTM", QVector3D(0, 0, -1),
+     {QVector3D(-S,  S, -S), QVector3D( S,  S, -S), QVector3D( S, -S, -S), QVector3D(-S, -S, -S)},
+     0.0f, -float(M_PI)},
+
+    // FRONT (-Y)
+    {"FRONT", QVector3D(0, -1, 0),
+     {QVector3D(-S, -S, -S), QVector3D( S, -S, -S), QVector3D( S, -S,  S), QVector3D(-S, -S,  S)},
+     0.0f, -float(M_PI) / 2.0f},
+
+    // BACK (+Y)
+    {"BACK", QVector3D(0, 1, 0),
+     {QVector3D( S,  S, -S), QVector3D(-S,  S, -S), QVector3D(-S,  S,  S), QVector3D( S,  S,  S)},
+     -float(M_PI), -float(M_PI) / 2.0f},
+
+    // RIGHT (+X)
+    {"RIGHT", QVector3D(1, 0, 0),
+     {QVector3D( S, -S, -S), QVector3D( S,  S, -S), QVector3D( S,  S,  S), QVector3D( S, -S,  S)},
+     -float(M_PI) / 2.0f, -float(M_PI) / 2.0f},
+
+    // LEFT (-X)
+    {"LEFT", QVector3D(-1, 0, 0),
+     {QVector3D(-S,  S, -S), QVector3D(-S, -S, -S), QVector3D(-S, -S,  S), QVector3D(-S,  S,  S)},
+     float(M_PI) / 2.0f, -float(M_PI) / 2.0f}
+};
+
+} // namespace
 
 ViewportView::ViewportView(QWidget* parent, ViewportScene* scene)
     : QGraphicsView(new QGraphicsScene(), parent), gl(new QOpenGLWidget(this)),
@@ -192,6 +244,198 @@ void ViewportView::drawForeground(QPainter* painter, const QRectF& rect)
     QGraphicsView::drawForeground(painter, rect);
     drawAxes(painter);
     drawCoords(painter);
+    drawViewCube(painter);
+}
+
+void ViewportView::drawViewCube(QPainter* painter) const
+{
+    if (ui_hidden || width() < 120 || height() < 120)
+    {
+        return;
+    }
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    painter->setRenderHint(QPainter::TextAntialiasing, true);
+
+    const QPointF cube_center(width() / 2.0f - 55.0f, -height() / 2.0f + 55.0f);
+    const float disc_radius = 46.0f;
+
+    // 1. Draw backdrop disc with subtle gradient and rim
+    QRadialGradient bg(cube_center, disc_radius);
+    bg.setColorAt(0.0, QColor(36, 40, 48, 205));
+    bg.setColorAt(0.85, QColor(24, 27, 32, 215));
+    bg.setColorAt(1.0, QColor(18, 20, 24, 225));
+    painter->setBrush(bg);
+    painter->setPen(QPen(QColor(255, 255, 255, 30), 1.2));
+    painter->drawEllipse(cube_center, disc_radius, disc_radius);
+
+    // Subtle inner compass ring & cardinal tick marks
+    painter->setBrush(Qt::NoBrush);
+    painter->setPen(QPen(QColor(255, 255, 255, 14), 1.0));
+    painter->drawEllipse(cube_center, 40.0f, 40.0f);
+
+    painter->setPen(QPen(QColor(255, 255, 255, 45), 1.5));
+    painter->drawLine(QPointF(cube_center.x(), cube_center.y() - disc_radius + 2),
+                     QPointF(cube_center.x(), cube_center.y() - disc_radius + 6));
+    painter->drawLine(QPointF(cube_center.x(), cube_center.y() + disc_radius - 6),
+                     QPointF(cube_center.x(), cube_center.y() + disc_radius - 2));
+    painter->drawLine(QPointF(cube_center.x() - disc_radius + 2, cube_center.y()),
+                     QPointF(cube_center.x() - disc_radius + 6, cube_center.y()));
+    painter->drawLine(QPointF(cube_center.x() + disc_radius - 6, cube_center.y()),
+                     QPointF(cube_center.x() + disc_radius - 2, cube_center.y()));
+
+    // 2. Transform cube faces
+    const QMatrix4x4 R = getMatrix(ROT);
+
+    struct FaceRender {
+        int index;
+        float z;
+        QPolygonF poly;
+        QPointF center;
+        QVector3D n_cam;
+    };
+    QVector<FaceRender> visible;
+
+    for (int i = 0; i < 6; ++i)
+    {
+        QVector3D n_cam = R * CUBE_FACES[i].normal;
+        if (n_cam.z() > 0.02f)
+        {
+            QPolygonF poly;
+            QPointF p_sum(0, 0);
+            for (int c = 0; c < 4; ++c)
+            {
+                QVector3D vc = R * CUBE_FACES[i].corners[c];
+                QPointF pt(cube_center.x() + vc.x(), cube_center.y() - vc.y());
+                poly << pt;
+                p_sum += pt;
+            }
+            visible.append({i, n_cam.z(), poly, p_sum * 0.25f, n_cam});
+        }
+    }
+
+    // Sort ascending by z so back faces are drawn first, closest drawn last (painter's algorithm)
+    std::sort(visible.begin(), visible.end(),
+              [](const FaceRender& a, const FaceRender& b) {
+                  return a.z < b.z;
+              });
+
+    const QVector3D light_dir = QVector3D(0.35f, 0.45f, 0.82f).normalized();
+
+    QFont font = painter->font();
+    font.setPointSize(8);
+    font.setBold(true);
+    painter->setFont(font);
+    QFontMetrics fm(font);
+
+    // 3. Draw each visible face
+    for (const auto& vf : visible)
+    {
+        bool is_hovered = (vf.index == hovered_cube_face);
+        float dot = qMax(0.0f, QVector3D::dotProduct(vf.n_cam.normalized(), light_dir));
+        float factor = 0.52f + 0.48f * dot;
+
+        QColor face_color;
+        QPen edge_pen;
+
+        if (is_hovered)
+        {
+            // Vibrant cyan/azure highlight on hover
+            int r = qBound(0, int(30 * factor + 20), 255);
+            int g = qBound(0, int(135 * factor + 50), 255);
+            int b = qBound(0, int(220 * factor + 35), 255);
+            face_color = QColor(r, g, b, 245);
+            edge_pen = QPen(QColor(170, 235, 255, 255), 2.0);
+        }
+        else
+        {
+            // Sleek CAD slate with directional lighting
+            int r = qBound(0, int(50 * factor), 255);
+            int g = qBound(0, int(58 * factor), 255);
+            int b = qBound(0, int(70 * factor), 255);
+            face_color = QColor(r, g, b, 230);
+            edge_pen = QPen(QColor(110, 125, 145, 220), 1.5);
+        }
+
+        painter->setPen(edge_pen);
+        painter->setBrush(face_color);
+        painter->drawPolygon(vf.poly);
+
+        // Smoothly fade label as face turns away
+        float text_alpha = qBound(0.0f, (vf.z - 0.15f) / 0.25f, 1.0f);
+        if (text_alpha > 0.05f)
+        {
+            const QString name = CUBE_FACES[vf.index].name;
+            QRect text_rect = fm.boundingRect(name);
+
+            QColor text_color = is_hovered ? QColor(255, 255, 255)
+                                           : QColor(220, 230, 240);
+            text_color.setAlphaF(text_color.alphaF() * text_alpha);
+
+            painter->setPen(text_color);
+            painter->drawText(QPointF(vf.center.x() - text_rect.width() / 2.0f,
+                                      vf.center.y() + text_rect.height() / 3.0f),
+                              name);
+        }
+    }
+
+    painter->restore();
+}
+
+int ViewportView::viewCubeFaceAt(QPointF scene_pos) const
+{
+    if (ui_hidden || width() < 120 || height() < 120)
+    {
+        return -1;
+    }
+
+    const QPointF cube_center(width() / 2.0f - 55.0f, -height() / 2.0f + 55.0f);
+    const QPointF delta = scene_pos - cube_center;
+    if (delta.x() * delta.x() + delta.y() * delta.y() > 50.0f * 50.0f)
+    {
+        return -1;
+    }
+
+    const QMatrix4x4 R = getMatrix(ROT);
+
+    struct VisibleFace {
+        int index;
+        float z;
+        QPolygonF poly;
+    };
+    QVector<VisibleFace> visible;
+
+    for (int i = 0; i < 6; ++i)
+    {
+        QVector3D n_cam = R * CUBE_FACES[i].normal;
+        if (n_cam.z() > 0.05f)
+        {
+            QPolygonF poly;
+            for (int c = 0; c < 4; ++c)
+            {
+                QVector3D vc = R * CUBE_FACES[i].corners[c];
+                poly << QPointF(cube_center.x() + vc.x(), cube_center.y() - vc.y());
+            }
+            visible.append({i, n_cam.z(), poly});
+        }
+    }
+
+    // Sort descending by z (closest to camera first)
+    std::sort(visible.begin(), visible.end(),
+              [](const VisibleFace& a, const VisibleFace& b) {
+                  return a.z > b.z;
+              });
+
+    for (const auto& vf : visible)
+    {
+        if (vf.poly.containsPoint(scene_pos, Qt::OddEvenFill))
+        {
+            return vf.index;
+        }
+    }
+
+    return -1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -243,6 +487,17 @@ void ViewportView::setCenter(QVector3D c)
 
 void ViewportView::mousePressEvent(QMouseEvent* event)
 {
+    if (event->button() == Qt::LeftButton && !ui_hidden && !angle_locked)
+    {
+        int face = viewCubeFaceAt(mapToScene(event->pos()));
+        if (face != -1)
+        {
+            spinTo(CUBE_FACES[face].target_yaw, CUBE_FACES[face].target_pitch);
+            event->accept();
+            return;
+        }
+    }
+
     QGraphicsView::mousePressEvent(event);
 
     // If the event hasn't been accepted, record click position for
@@ -286,8 +541,43 @@ void ViewportView::mouseMoveEvent(QMouseEvent* event)
         dragged = true;
     }
 
+    if (event->buttons() == Qt::NoButton && !ui_hidden && !angle_locked)
+    {
+        int face = viewCubeFaceAt(mapToScene(event->pos()));
+        if (face != hovered_cube_face)
+        {
+            hovered_cube_face = face;
+            if (hovered_cube_face != -1)
+            {
+                setCursor(Qt::PointingHandCursor);
+            }
+            else
+            {
+                unsetCursor();
+            }
+            scene()->invalidate(QRect(), QGraphicsScene::ForegroundLayer);
+        }
+    }
+    else if (event->buttons() != Qt::NoButton && hovered_cube_face != -1)
+    {
+        hovered_cube_face = -1;
+        unsetCursor();
+        scene()->invalidate(QRect(), QGraphicsScene::ForegroundLayer);
+    }
+
     // Redraw to update cursor position
     scene()->invalidate(QRect(), QGraphicsScene::ForegroundLayer);
+}
+
+void ViewportView::leaveEvent(QEvent* event)
+{
+    QGraphicsView::leaveEvent(event);
+    if (hovered_cube_face != -1)
+    {
+        hovered_cube_face = -1;
+        unsetCursor();
+        scene()->invalidate(QRect(), QGraphicsScene::ForegroundLayer);
+    }
 }
 
 void ViewportView::mouseReleaseEvent(QMouseEvent* event)
@@ -330,6 +620,11 @@ void ViewportView::resizeEvent(QResizeEvent* e)
 {
     Q_UNUSED(e);
     setSceneRect(-width()/2, -height()/2, width(), height());
+    if (hovered_cube_face != -1)
+    {
+        hovered_cube_face = -1;
+        unsetCursor();
+    }
 }
 
 void ViewportView::keyPressEvent(QKeyEvent* event)
@@ -425,13 +720,35 @@ void ViewportView::setPitch(float p)
 
 void ViewportView::spinTo(float new_yaw, float new_pitch)
 {
+    for (auto child : findChildren<QPropertyAnimation*>())
+    {
+        if (child->propertyName() == "_yaw" || child->propertyName() == "_pitch")
+        {
+            child->stop();
+        }
+    }
+
+    // Find shortest angular path for yaw
+    float dyaw = new_yaw - yaw;
+    while (dyaw > M_PI) dyaw -= 2 * M_PI;
+    while (dyaw < -M_PI) dyaw += 2 * M_PI;
+    float target_yaw = yaw + dyaw;
+
     QPropertyAnimation* a = new QPropertyAnimation(this, "_yaw", this);
-    a->setDuration(100);
+    a->setDuration(220);
+    a->setEasingCurve(QEasingCurve::InOutCubic);
     a->setStartValue(yaw);
-    a->setEndValue(new_yaw);
+    a->setEndValue(target_yaw);
+
+    connect(a, &QPropertyAnimation::finished, [this]() {
+        yaw = fmod(yaw + M_PI, M_PI * 2);
+        if (yaw < 0) yaw += M_PI * 2;
+        yaw -= M_PI;
+    });
 
     QPropertyAnimation* b = new QPropertyAnimation(this, "_pitch", this);
-    b->setDuration(100);
+    b->setDuration(220);
+    b->setEasingCurve(QEasingCurve::InOutCubic);
     b->setStartValue(pitch);
     b->setEndValue(new_pitch);
 

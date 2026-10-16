@@ -45,7 +45,7 @@ const CubeFaceDef CUBE_FACES[6] = {
      0.0f, 0.0f},
 
     // BOTTOM (-Z)
-    {"BTM", QVector3D(0, 0, -1),
+    {"BOTTOM", QVector3D(0, 0, -1),
      QVector3D(1, 0, 0), QVector3D(0, -1, 0),
      {QVector3D(-S,  S, -S), QVector3D( S,  S, -S), QVector3D( S, -S, -S), QVector3D(-S, -S, -S)},
      0.0f, -float(M_PI)},
@@ -332,7 +332,7 @@ void ViewportView::drawViewCube(QPainter* painter) const
     const QVector3D light_dir = QVector3D(0.35f, 0.45f, 0.82f).normalized();
 
     QFont font = painter->font();
-    font.setPointSize(13);
+    font.setPointSize(10);
     font.setBold(true);
     painter->setFont(font);
     QFontMetrics fm(font);

@@ -23,9 +23,11 @@ jobs:
       with:
         msystem: UCRT64
         update: true
+        path-type: minimal
         install: >-
           mingw-w64-ucrt-x86_64-toolchain
           mingw-w64-ucrt-x86_64-qt5
+          mingw-w64-ucrt-x86_64-qt5-tools
           mingw-w64-ucrt-x86_64-python
           mingw-w64-ucrt-x86_64-boost
           mingw-w64-ucrt-x86_64-libpng
@@ -35,14 +37,16 @@ jobs:
           flex
           lemon
 
-    - name: Build Antimony
+    - name: Build Antimony and Bundle Runtime
       shell: msys2 {0}
       run: |
         mkdir -p build
         cd build
-        cmake -G Ninja ..
+        cmake -G Ninja -DPython_ROOT_DIR=/ucrt64 -DPython_EXECUTABLE=/ucrt64/bin/python3.exe ..
         ninja
-        [ -d app ] && mv app antimony || true
+        cd ..
+        chmod +x scripts/bundle-windows.sh
+        ./scripts/bundle-windows.sh build/antimony
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4

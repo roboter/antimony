@@ -121,6 +121,21 @@ int main(int argc, char *argv[])
     fab::preInit();
     Graph::preInit();
     AppHooks::preInit();
+
+#if defined Q_OS_WIN32
+    {
+        QString app_dir = QCoreApplication::applicationDirPath();
+        if (QDir(app_dir + "/lib").exists())
+        {
+            static std::wstring py_home = app_dir.toStdWString();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            Py_SetPythonHome(const_cast<wchar_t*>(py_home.c_str()));
+#pragma GCC diagnostic pop
+        }
+    }
+#endif
+
     Py_Initialize();
 
     // Set locale to C to make atof correctly parse floats

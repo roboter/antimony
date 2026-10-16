@@ -1,0 +1,60 @@
+name: Linux Build
+
+on:
+  push:
+    branches: [ "master", "main", "feature/*" ]
+    tags:
+      - '*'
+  pull_request:
+    branches: [ "master", "main", "feature/*" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          libpng-dev \
+          python3-dev \
+          libboost-all-dev \
+          libboost-python-dev \
+          libgl1-mesa-dev \
+          lemon \
+          flex \
+          qtbase5-dev \
+          qtbase5-private-dev \
+          libqt5opengl5-dev \
+          desktop-file-utils
+
+    - name: Build Antimony and Package
+      run: |
+        chmod +x scripts/build-linux.sh
+        VERSION="${GITHUB_REF_NAME:-0.9.7}"
+        ./scripts/build-linux.sh "$VERSION"
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: antimony-linux-build
+        path: |
+          dist/antimony-linux-*.tar.gz
+          dist/antimony-linux-*.deb
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          dist/antimony-linux-*.tar.gz
+          dist/antimony-linux-*.deb

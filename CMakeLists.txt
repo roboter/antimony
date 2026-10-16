@@ -15,10 +15,15 @@ if (WIN32)
 endif()
 
 cmake_policy(SET CMP0167 NEW)
-find_package(Boost REQUIRED COMPONENTS python${Python_VERSION_MAJOR}${Python_VERSION_MINOR})
-
-if (NOT ${Boost_FOUND})
-    message(FATAL_ERROR "Could not find boost::python3")
+find_package(Boost COMPONENTS python${Python_VERSION_MAJOR}${Python_VERSION_MINOR})
+if (NOT Boost_FOUND)
+    find_package(Boost COMPONENTS python${Python_VERSION_MAJOR})
+endif()
+if (NOT Boost_FOUND)
+    find_package(Boost COMPONENTS python3)
+endif()
+if (NOT Boost_FOUND)
+    find_package(Boost REQUIRED COMPONENTS python)
 endif()
 
 ################################################################################

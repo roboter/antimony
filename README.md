@@ -1,5 +1,6 @@
 [![Windows Build](https://github.com/roboter/antimony/actions/workflows/windows-build.yml/badge.svg)](https://github.com/roboter/antimony/actions/workflows/windows-build.yml)
 [![Mac Build](https://github.com/roboter/antimony/actions/workflows/mac-build.yml/badge.svg)](https://github.com/roboter/antimony/actions/workflows/mac-build.yml)
+[![Linux Build](https://github.com/roboter/antimony/actions/workflows/linux-build.yml/badge.svg)](https://github.com/roboter/antimony/actions/workflows/linux-build.yml)
 
 ## About
 *Antimony* is a computer-aided design (CAD) tool from a parallel universe
@@ -20,7 +21,7 @@ It's at a beta level of stability:
 solid, but not recommended for mission-critical use.
 
 To get started, there are two suggested options:
-- Download a [pre-built application](https://github.com/roboter/antimony/releases) (🍎 Mac and 🪟 Windows)
+- Download a [pre-built application](https://github.com/roboter/antimony/releases) (🍎 Mac, 🪟 Windows, and 🐧 Linux)
 - [Build from source](BUILDING.md) (🍎 Mac, 🐧 Linux, and 🪟 Windows)
 
 There are also community-supported packages for the following operating systems:

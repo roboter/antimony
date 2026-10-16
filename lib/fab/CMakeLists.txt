@@ -15,9 +15,10 @@ add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/v2syntax.lemon.hpp
            ${CMAKE_CURRENT_BINARY_DIR}/v2syntax.lemon.cpp
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/tree/v2syntax.y
-    COMMAND ${LEMON_EXECUTABLE} -q -c -s ${CMAKE_CURRENT_SOURCE_DIR}/src/tree/v2syntax.y
-    COMMAND mv ${CMAKE_CURRENT_SOURCE_DIR}/src/tree/v2syntax.c ${CMAKE_CURRENT_BINARY_DIR}/v2syntax.lemon.cpp
-    COMMAND mv ${CMAKE_CURRENT_SOURCE_DIR}/src/tree/v2syntax.h ${CMAKE_CURRENT_BINARY_DIR}/v2syntax.lemon.hpp)
+    COMMAND ${LEMON_EXECUTABLE} -q -s ${CMAKE_CURRENT_SOURCE_DIR}/src/tree/v2syntax.y
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/src/tree/v2syntax.c ${CMAKE_CURRENT_BINARY_DIR}/v2syntax.lemon.cpp
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/src/tree/v2syntax.h ${CMAKE_CURRENT_BINARY_DIR}/v2syntax.lemon.hpp
+    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CURRENT_SOURCE_DIR}/src/tree/v2syntax.c ${CMAKE_CURRENT_SOURCE_DIR}/src/tree/v2syntax.h)
 
 # Custom command to generate the lexer sources with flex
 if(WIN32)

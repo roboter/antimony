@@ -8,6 +8,11 @@ VERSION="${1:-0.9.7}"
 # Strip leading 'v' if present
 VERSION="${VERSION#v}"
 
+# If VERSION does not start with a digit (e.g. branch name 'master'), fallback to 0.9.7
+if [[ ! "$VERSION" =~ ^[0-9] ]]; then
+    VERSION="0.9.7"
+fi
+
 echo "==> Building Antimony v${VERSION} for Linux..."
 cd "$REPO_ROOT"
 
@@ -118,15 +123,16 @@ if command -v linuxdeploy &>/dev/null || [ -f "./linuxdeploy-x86_64.AppImage" ];
     cp -r build/antimony/sb/nodes "$APPDIR/usr/share/antimony/nodes"
     cp -r build/antimony/sb/fab "$APPDIR/usr/share/antimony/fab"
     
+    cp deploy/icon.svg deploy/antimony.svg
     QMAKE_BIN="$(command -v qmake || command -v qmake-qt5 || echo /usr/lib/qt5/bin/qmake)"
     QMAKE="$QMAKE_BIN" "$LINUXDEPLOY" --appdir "$APPDIR" \
         -e build/antimony/antimony \
-        -i deploy/icon.svg \
+        -i deploy/antimony.svg \
         -d "$TAR_DIR/share/applications/antimony.desktop" \
         --plugin qt \
         --output appimage || echo "AppImage creation skipped or failed."
 
-    find . -maxdepth 1 -name "*Antimony*.AppImage" -exec mv {} "dist/antimony-linux-${VERSION}-x86_64.AppImage" \; 2>/dev/null || true
+    find . -maxdepth 1 -iname "*antimony*.AppImage" ! -name "linuxdeploy*" -exec mv {} "dist/antimony-linux-${VERSION}-x86_64.AppImage" \; 2>/dev/null || true
 fi
 
 echo "==> Linux build and packaging complete. Artifacts in dist/:"

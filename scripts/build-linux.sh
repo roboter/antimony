@@ -100,11 +100,18 @@ dpkg-deb --build "$DEB_DIR" "dist/antimony-linux-amd64.deb"
 if command -v linuxdeploy &>/dev/null || [ -f "./linuxdeploy-x86_64.AppImage" ]; then
     echo "==> Attempting AppImage creation..."
     LINUXDEPLOY="./linuxdeploy-x86_64.AppImage"
-    if ! command -v linuxdeploy &>/dev/null; then
-        chmod +x "$LINUXDEPLOY"
-    else
+    if command -v linuxdeploy &>/dev/null; then
         LINUXDEPLOY="linuxdeploy"
+    else
+        chmod +x "$LINUXDEPLOY"
     fi
+
+    if [ -f "./linuxdeploy-plugin-qt-x86_64.AppImage" ]; then
+        chmod +x "./linuxdeploy-plugin-qt-x86_64.AppImage"
+        ln -sf linuxdeploy-plugin-qt-x86_64.AppImage linuxdeploy-plugin-qt
+        export PATH="$PWD:$PATH"
+    fi
+
     APPDIR="dist/AppDir"
     rm -rf "$APPDIR"
     mkdir -p "$APPDIR/usr/share/antimony"
@@ -118,9 +125,8 @@ if command -v linuxdeploy &>/dev/null || [ -f "./linuxdeploy-x86_64.AppImage" ];
         -d "$TAR_DIR/share/applications/antimony.desktop" \
         --plugin qt \
         --output appimage || echo "AppImage creation skipped or failed."
-    if [ -f Antimony-x86_64.AppImage ]; then
-        mv Antimony-x86_64.AppImage dist/antimony-linux-x86_64.AppImage
-    fi
+
+    find . -maxdepth 1 -name "*Antimony*.AppImage" -exec mv {} "dist/antimony-linux-${VERSION}-x86_64.AppImage" \; 2>/dev/null || true
 fi
 
 echo "==> Linux build and packaging complete. Artifacts in dist/:"

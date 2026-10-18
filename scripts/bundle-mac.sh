@@ -71,6 +71,39 @@ fi
 # Ensure @executable_path/../Frameworks is in rpath
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$EXECUTABLE" 2>/dev/null || true
 
+echo "==> Resolving secondary transitive dylib dependencies..."
+HOMEBREW_PREFIX="$(brew --prefix 2>/dev/null || echo '/opt/homebrew')"
+FRAMEWORKS_DIR="$APP_PATH/Contents/Frameworks"
+
+RESOLVED_ANY=true
+while [ "$RESOLVED_ANY" = true ]; do
+    RESOLVED_ANY=false
+    for dylib in "$FRAMEWORKS_DIR"/*.dylib; do
+        [ -f "$dylib" ] || continue
+        for dep in $(otool -L "$dylib" | awk '/@rpath\/.*\.dylib/ {print $1}'); do
+            dep_name=$(basename "$dep")
+            if [ ! -f "$FRAMEWORKS_DIR/$dep_name" ]; then
+                src_path=""
+                if [ -f "$HOMEBREW_PREFIX/lib/$dep_name" ]; then
+                    src_path="$HOMEBREW_PREFIX/lib/$dep_name"
+                else
+                    src_path=$(find "$HOMEBREW_PREFIX/opt" "$HOMEBREW_PREFIX/lib" -name "$dep_name" 2>/dev/null | head -n 1 || true)
+                fi
+
+                if [ -n "$src_path" ] && [ -f "$src_path" ]; then
+                    echo "  Bundling missing transitive dependency: $dep_name"
+                    cp -L "$src_path" "$FRAMEWORKS_DIR/$dep_name"
+                    chmod +w "$FRAMEWORKS_DIR/$dep_name"
+                    install_name_tool -id "@executable_path/../Frameworks/$dep_name" "$FRAMEWORKS_DIR/$dep_name" 2>/dev/null || true
+                    RESOLVED_ANY=true
+                else
+                    echo "  Warning: Could not locate missing dependency: $dep_name"
+                fi
+            fi
+        done
+    done
+done
+
 echo "==> Re-signing application bundle..."
 codesign --force --deep -s - "$APP_PATH"
 
@@ -79,6 +112,24 @@ otool -L "$EXECUTABLE"
 
 if otool -L "$EXECUTABLE" | grep -E '(/opt/homebrew|/usr/local)'; then
     echo "ERROR: Unbundled Homebrew libraries still referenced in $EXECUTABLE"
+    exit 1
+fi
+
+echo "==> Verifying bundled dylib integrity..."
+MISSING_DEPS=0
+for dylib in "$FRAMEWORKS_DIR"/*.dylib; do
+    [ -f "$dylib" ] || continue
+    for dep in $(otool -L "$dylib" | awk '/@(rpath|executable_path\/..\/Frameworks)\/.*\.dylib/ {print $1}'); do
+        dep_name=$(basename "$dep")
+        if [ ! -f "$FRAMEWORKS_DIR/$dep_name" ]; then
+            echo "ERROR: Missing dependency $dep_name referenced by $dylib"
+            MISSING_DEPS=1
+        fi
+    done
+done
+
+if [ "$MISSING_DEPS" -ne 0 ]; then
+    echo "ERROR: App bundle has missing dylib dependencies!"
     exit 1
 fi
 

@@ -67,6 +67,23 @@ To build on Windows, you will need [MSYS2](https://www.msys2.org/) with the UCRT
 
 You can use the provided PowerShell scripts (`.\scripts\build-windows.ps1` and `.\scripts\run-windows.ps1`) to automatically install these dependencies, build, and run the application. See [BUILDING.md](BUILDING.md) for more details.
 
+## Scripts
+
+The `scripts/` directory contains helper scripts for building and running Antimony:
+
+### macOS
+- **`scripts/build-mac.sh`** — Checks Homebrew dependencies, configures with CMake, and builds with Ninja. Options:
+  - `--bundle` — Bundle frameworks & libraries for standalone distribution
+  - `--dmg` — Bundle and create `antimony-mac.dmg`
+  - `--clean` — Remove build directory before compiling
+  - `--skip-deps` — Skip dependency check/installation
+- **`scripts/bundle-mac.sh`** — Deploys Qt frameworks, bundles dylib/Python dependencies, and re-signs the app bundle (called by `build-mac.sh --bundle`)
+
+### Windows
+- **`scripts/build-windows.ps1`** — Installs MSYS2 UCRT64 dependencies via pacman, then builds with CMake + Ninja
+- **`scripts/run-windows.ps1`** — Adds MSYS2 DLLs to PATH and launches the built executable
+- **`scripts/run-ci-locally.ps1`** — Simulates the GitHub Actions Windows build pipeline locally
+
 ## Support
 
 If you have a general question, [send it along to the Google Group](https://groups.google.com/forum/#!forum/antimony-dev).

@@ -37,18 +37,15 @@ open app/Antimony.app
 
 --------------------------------------------------------------------------------
 
-Linux
------
-Tested on a clean Xubuntu 16.04 virtual machine:
+### Debian / Ubuntu
+Tested on Ubuntu:
 
-```
+```bash
 # Install dependencies
-sudo apt install git build-essential libpng-dev python3-dev libboost-all-dev  libgl1-mesa-dev lemon flex qt5-default ninja-build cmake
-
-(On some distros, you may need to install `libqt5opengl5` or `libqt5opengl5-dev` as well).
+sudo apt install git build-essential libpng-dev python3-dev libboost-all-dev libgl1-mesa-dev lemon flex qtbase5-dev qtbase5-private-dev libqt5opengl5-dev ninja-build cmake
 
 # Clone the repo
-git clone https://github.com/mkeeter/antimony
+git clone https://github.com/roboter/antimony
 cd antimony
 
 # Make a build folder
@@ -58,8 +55,32 @@ cd build
 # Build and launch the application
 cmake -GNinja ..
 ninja
-./app/antimony
+./antimony/antimony
 ```
+
+### Arch Linux / Omarchy
+On Arch Linux and Omarchy (Hyprland/Wayland):
+
+```bash
+# Install dependencies
+sudo pacman -S --needed base-devel git cmake ninja python boost boost-libs qt5-base qt5-tools libpng lemon flex mesa
+
+# If running on Wayland (Omarchy default), also install Qt5 Wayland support:
+sudo pacman -S --needed qt5-wayland
+
+# Clone and build
+git clone https://github.com/roboter/antimony
+cd antimony
+mkdir build && cd build
+cmake -GNinja ..
+ninja
+./antimony/antimony
+```
+
+> **Note for Omarchy (Hyprland / Wayland):** If the application fails to initialize the Qt platform plugin on Wayland, make sure `qt5-wayland` is installed. Alternatively, force Xwayland compatibility by running with:
+> ```bash
+> QT_QPA_PLATFORM=xcb ./antimony/antimony
+> ```
 
 To put Antimony on your path, call `sudo ninja install`.  This does two things:
 - The `antimony` executable is copied to `/usr/local/bin`
